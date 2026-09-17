@@ -1,3 +1,4 @@
+import requests
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
@@ -23,18 +24,27 @@ HOUSE_COMMISSION_PERCENT = 20  # ለቤቱ የሚቆረጥ 20% ኮሚሽን
 def index():
     return "Ethio Bingo Mini App Backend with Telegram Token is Running Successfully!"
 
-# የቴሌግራም ዌብሆክ (Webhook) መቀበያ መስመር
+# የቴሌግራም ዌብሆክ (Webhook) መቀበያ እና /start መልስ መስጫ
 @app.route(f'/webhook/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
 def telegram_webhook():
     update = request.json
-    if update:
-        pass
+    if update and "message" in update:
+        chat_id = update["message"]["chat"]["id"]
+        text = update["message"].get("text", "")
+        
+        # ተጠቃሚው /start ሲል የሚሰጠው መልስ
+        if text == "/start":
+            bot_message = "እንኳን ወደ Ethio Bingo Game በደህና መጡ! ለመጫወት እና አካውንትዎን ለማስተዳደር ከታች ያለውን ሊንክ ይጠቀሙ።"
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            payload = {"chat_id": chat_id, "text": bot_message}
+            requests.post(url, json=payload)
+            
     return jsonify({"status": "ok"})
 
 # 1. የባላንስ ማረጋገጫ ኤፒአይ
 @app.route('/api/get_balance', methods=['POST'])
 def get_balance():
-    data = request.json
+    data = request.json or {}
     user_id = str(data.get("user_id"))
     
     if user_id not in users_db:
@@ -61,7 +71,7 @@ def deposit_info():
 # 3. የጨዋታ መክፈቻ እና የባላንስ ማረጋገጫ (Low Balance Check)
 @app.route('/api/play_game', methods=['POST'])
 def play_game():
-    data = request.json
+    data = request.json or {}
     user_id = str(data.get("user_id"))
     ticket_price = float(data.get("ticket_price", 10.0))
     
@@ -91,8 +101,7 @@ def play_game():
 # 4. የድል ስሌት እና የ 20% ኮሚሽን ማስተካከያ (ቤት ኮሚሽን)
 @app.route('/api/calculate_win', methods=['POST'])
 def calculate_win():
-    data.get("total_players", 10)
-    data = request.json
+    data = request.json or {}
     total_players = int(data.get("total_players", 10))
     ticket_price = float(data.get("ticket_price", 40.0))
     
