@@ -22,20 +22,26 @@ HOUSE_COMMISSION_PERCENT = 20  # ለቤቱ የሚቆረጥ 20% ኮሚሽን
 
 @app.route('/')
 def index():
-    return "Ethio Bingo Mini App Backend with Telegram Buttons is Running Successfully!"
+    return "Ethio Bingo Mini App Backend is Running Successfully!"
 
-# የቴሌግራም ዌብሆክ (Webhook) እና /start መልስ መስጫ ከአዝራሮች ጋር
+# የቴሌግራም ዌብሆክ (Webhook) መቀበያ (አዝራሮች ሲነኩ ምላሽ የሚሰጥበት)
 @app.route(f'/webhook/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
 def telegram_webhook():
     update = request.json
-    if update and "message" in update:
+    if not update:
+        return jsonify({"status": "ok"})
+    
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    answer_callback_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery"
+
+    # 1. ተጠቃሚው ጽሁፍ ሲልክ (/start)
+    if "message" in update:
         chat_id = update["message"]["chat"]["id"]
         text = update["message"].get("text", "")
         
         if text == "/start":
             bot_message = "እንኳን ወደ Ethio Bingo Game በደህና መጡ! ከታች ያሉትን አማራጮች በመጠቀም መጫወት እና አካውንትዎን ማስተዳደር ይችላሉ።"
             
-            # ተጠቃሚው የሚጫናቸው ቆንጆ አዝራሮች (Inline Keyboards)
             keyboard = {
                 "inline_keyboard": [
                     [{"text": "🎮 ቢንጎ ጨዋታ (Play Bingo)", "callback_data": "play_bingo"}],
@@ -45,13 +51,46 @@ def telegram_webhook():
                 ]
             }
             
-            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
             payload = {
                 "chat_id": chat_id, 
                 "text": bot_message,
                 "reply_markup": keyboard
             }
             requests.post(url, json=payload)
+
+    # 2. ተጠቃሚው አዝራሮቹን ሲጫን (Callback Query)
+    elif "callback_query" in update:
+        callback_query = update["callback_query"]
+        callback_id = callback_query["id"]
+        chat_id = callback_query["message"]["chat"]["id"]
+        data = callback_query.get("data", "")
+        
+        # የናፍቆት ምልክቱን (Loading animation) ማጥፊያ
+        requests.post(answer_callback_url, json={"callback_query_id": callback_id})
+        
+        # በእያንዳንዱ አዝራር ላይ የሚሰጠው ምላሽ
+        response_text = ""
+        if data == "play_bingo":
+            response_text = "🎮 የቢንጎ ጨዋታ ገጽ ተከፍቷል! ለመጫወት የኪስ ቦርሳዎን ቀሪ ሂሳብ ይፈትሹ።"
+        elif data == "deposit":
+            response_text = f"💰 **ዲፖዚት (Deposit)**\n\nእባክዎ ገንዘቡን በዚህ አካውንት ያስተላልፉ፦\n• ስም: {BANK_DETAILS['account_holder']}\n• CBE: {BANK_DETAILS['cbe']}\n• Telebirr: {BANK_DETAILS['telebirr']}\n\nካስተላለፉ በኋላ ስክሪንሾት ይላኩ።"
+        elif data == "withdraw":
+            response_text = "💳 **ዊዝድሮ (Withdraw)**\n\nገንዘብ ለማውጣት የሚፈልጉትን መጠን እና የባንክ አካውንት ቁጥር ይላኩ።"
+        elif data == "invite":
+            response_text = "👥 ጓደኛ በመጋበዝ ቦነሶችን ይሰብስቡ! የእርስዎን ሊንክ ለጓደኞችዎ ያጋሩ።"
+        elif data == "contact":
+            response_text = "📞 ማንኛውም ጥያቄ ካሎት ከዚህ ባለቤት ጋር ይነጋገሩ።"
+        elif data == "apply":
+            response_text = "📝 ለማመልከት የሚፈልጉትን መረጃ እዚህ ይሙሉ ወይም አድሚኑን ያግኙ።"
+        else:
+            response_text = "አገልግሎቱ በሂደት ላይ ነው።"
+            
+        payload = {
+            "chat_id": chat_id,
+            "text": response_text,
+            "parse_mode": "Markdown"
+        }
+        requests.post(url, json=payload)
             
     return jsonify({"status": "ok"})
 
@@ -82,7 +121,7 @@ def deposit_info():
         "instructions": f"እባክዎ ገንዘቡን በእንያቸው አመርጋ (Enyachew Amerga) ስም ባሉት አካውንቶች (CBE: {BANK_DETAILS['cbe']} ወይም Telebirr: {BANK_DETAILS['telebirr']}) ካስተላለፉ በኋላ የክፍያውን ስክሪንሾት ይላኩ።"
     })
 
-# 3. የጨዋታ መክፈቻ እና የባላንስ ማረጋገጫ (Low Balance Check)
+# 3. የጨዋታ መክፈቻ እና የባላንስ ማረጋገጫ
 @app.route('/api/play_game', methods=['POST'])
 def play_game():
     data = request.json or {}
@@ -110,7 +149,7 @@ def play_game():
         "remaining_balance": users_db[user_id]["balance"]
     })
 
-# 4. የድል ስሌት እና የ 20% ኮሚሽን ማስተካከያ (ቤት ኮሚሽን)
+# 4. የድል ስሌት እና የ 20% ኮሚሽን ማስተካከያ
 @app.route('/api/calculate_win', methods=['POST'])
 def calculate_win():
     data = request.json or {}
