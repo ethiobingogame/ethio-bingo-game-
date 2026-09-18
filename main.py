@@ -13,7 +13,7 @@ ADMIN_CHAT_ID = "1219"
 # የተጠቃሚዎች የውሂብ ማከማቻ
 users_db = {}
 
-# 💯 የባንክ መረጃዎች (የእርስዎ አካውንት)
+# 💯 የባንክ መረጃዎች (የእርስዎ እና የኢትዮ ቢንጎ ጌም መለያ)
 BANK_DETAILS = {
     "account_holder": "እንያቸው አመርጋ (Enyachew Amerga)",
     "cbe": "10006825286441",
@@ -21,25 +21,26 @@ BANK_DETAILS = {
 }
 
 # 100 የተለያዩ የቢንጎ ቦርዶችን በዘፈቀደ የሚያመነጭ ፊርማ (Function)
-def generate_unique_bingo_board():
-    # B (1-15), I (16-30), N (31-45), G (46-60), O (61-75)
+def generate_unique_bingo_board(board_number):
     b = random.sample(range(1, 16), 5)
     i = random.sample(range(16, 31), 5)
-    n = random.sample(range(31, 46), 4) # መሀል ላይ FREE ስለሚኖር 4 ቁጥር
-    n.insert(2, "FR") # FREE ሴል
+    n = random.sample(range(31, 46), 4)
+    n.insert(2, "★") # FREE / Star ሴል ልክ እንደ አራዳ ቢንጎ
     g = random.sample(range(46, 61), 5)
     o = random.sample(range(61, 76), 5)
     
-    board_text = " B    I    N    G    O \n------------------------\n"
+    board_text = f"       **Board No.{board_number}**       \n"
+    board_text += " B    I    N    G    O \n"
+    board_text += "------------------------\n"
     for r in range(5):
-        val_n = "FREE" if n[r] == "FR" else f"{n[r]:2d}"
+        val_n = " * " if n[r] == "★" else f"{n[r]:2d}"
         board_text += f" {b[r]:2d} | {i[r]:2d} | {val_n} | {g[r]:2d} | {o[r]:2d} \n"
     board_text += "------------------------"
     return board_text
 
 @app.route('/')
 def index():
-    return "Ethio Bingo Mini App Backend is Running Successfully!"
+    return "Ethio Bingo Game Mini App Backend is Running Successfully!"
 
 # የቴሌግራም ዌብሆክ (Webhook) መቀበያ
 @app.route(f'/webhook/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
@@ -69,7 +70,7 @@ def telegram_webhook():
         user_data = users_db[user_id]
         
         if text.startswith("/start"):
-            bot_message = f"እንኳን ወደ Ethio Bingo Game በደህና መጡ! 🎮\n\nየቴሌግራም አካውንትዎ (@{username}) ተመዝግቧል።"
+            bot_message = f"እንኳን ወደ 🎮 **ኢትዮ ቢንጎ ጌም (Ethio Bingo Game)** በደህና መጡ!\n\nየቴሌግራም አካውንትዎ (@{username}) በተሳካ ሁኔታ ተመዝግቧል።"
             requests.post(url, json={"chat_id": chat_id, "text": bot_message})
             show_main_menu(chat_id, url, user_data)
                 
@@ -77,7 +78,7 @@ def telegram_webhook():
             bot_message = "✅ የክፍያ ስክሪንሾትዎ በእንያቸው አመርጋ አካውንት ተቀብሏል! አድሚኑ አረጋግጦ ሒሳብዎን ይጨምርልዎታል።"
             requests.post(url, json={"chat_id": chat_id, "text": bot_message})
             
-            admin_notification = f"🔔 አዲስ የዲፖዚት ስክሪንሾት ከቴሌግራም ተጠቃሚ (@{username}, ID: {user_id}) ደርሷል!"
+            admin_notification = f"🔔 አዲስ የዲፖዚት ስክሪንሾት ከኢትዮ ቢንጎ ተጠቃሚ (@{username}, ID: {user_id}) ደርሷል!"
             requests.post(url, json={"chat_id": ADMIN_CHAT_ID, "text": admin_notification})
 
     # 2. አዝራሮች ሲጫኑ (Callback Query)
@@ -98,19 +99,15 @@ def telegram_webhook():
         response_text = ""
         reply_markup = None
         
-        if data == "play_bingo":
-            # 🎯 ለእያንዳንዱ ተጫዋች ከ100 የተለያዩ ቦርዶች ውስጥ የተለየ ቦርድ በራሱ ጌነሬት ሆኖ ይወጣል!
-            unique_board = generate_unique_bingo_board()
-            
+        if data == "play_menu":
             response_text = (
-                "🎮 **የእርስዎ የቢንጎ ጨዋታ ሰንጠረዥ (Unique Bingo Board)**\n\n"
-                f"```\n{unique_board}\n```\n"
-                "እባክዎ መጫወት የሚፈልጉትን የቲኬት ዋጋ ይምረጡ፦"
+                "🎲 **ኢትዮ ቢንጎ - የጨዋታ አማራጮች**\n\n"
+                "እባክዎ መጫወት የሚፈልጉትን የቲኬት ዋጋ ይምረጡ (ልክ እንደ አራዳ ቢንጎ አቀማመጥ)፦[span_2](start_span)[span_2](end_span)"
             )
             reply_markup = {
                 "inline_keyboard": [
-                    [{"text": "🎫 ቲኬት 10 ብር", "callback_data": "bet_10"}, {"text": "🎫 ቲኬት 20 ብር", "callback_data": "bet_20"}],
-                    [{"text": "🎫 ቲኬት 50 ብር", "callback_data": "bet_50"}, {"text": "🎫 ቲኬት 100 ብር", "callback_data": "bet_100"}],
+                    [{"text": "🟢 10 ETB (Active)", "callback_data": "bet_10"}, {"text": "🔵 20 ETB (Low Balance)", "callback_data": "bet_20"}],
+                    [{"text": "🟠 50 ETB (Active)", "callback_data": "bet_50"}, {"text": "🟣 100 ETB", "callback_data": "bet_100"}],
                     [{"text": "🔙 ወደ ዋናው ምናሌ", "callback_data": "main_menu"}]
                 ]
             }
@@ -120,19 +117,34 @@ def telegram_webhook():
             current_balance = user_data["balance"]
             
             if current_balance < bet_amount:
-                response_text = f"⚠️ **Insufficient Balance!**\n\nየኪስ ቦርሳዎ ቀሪ ሂሳብ ({current_balance} ብር) ለዚህ ጨዋታ በቂ አይደለም።\n\nእባክዎ መጀመሪያ ዲፖዚት ያድርጉ።"
+                response_text = f"⚠️ **Low Balance!**\n\nቀሪ ሂሳብዎ ({current_balance} ETB) ለዚህ ጨዋታ በቂ አይደለም።\n\nእባክዎ መጀመሪያ ዲፖዚት ያድርጉ።"
                 reply_markup = {
                     "inline_keyboard": [
                         [{"text": "💰 አሁን ዲፖዚት አድርግ", "callback_data": "deposit_menu"}],
-                        [{"text": "🔙 ተመለስ", "callback_data": "play_bingo"}]
+                        [{"text": "🔙 ተመለስ", "callback_data": "play_menu"}]
                     ]
                 }
             else:
-                user_data["balance"] -= bet_amount
-                response_text = f"🎉 ቲኬትዎ ተቆርጧል! ጨዋታው ተጀምሯል መልካም እድል!\n\nቀሪ ሂሳብዎ: {user_data['balance']} ብር"
+                # ከ1 እስከ 100 ካሉት ቦርዶች ውስጥ አንዱን በዘፈቀደ ይሰጣል
+                board_no = random.randint(1, 100)
+                board_display = generate_unique_bingo_board(board_no)
+                
+                response_text = (
+                    f"🎉 **ቲኬትዎ ተቆርጧል!**\n\n"
+                    f"```\n{board_display}\n```\n\n"
+                    f"ጨዋታው ሊጀመር ነው! መልካም እድል!\nቀሪ ሂሳብዎ: **{user_data['balance']} ETB**"
+                )
+                reply_markup = {
+                    "inline_keyboard": [
+                        [{"text": "🔄 ሪፍሬሽ (Refresh)", "callback_data": "play_menu"}, {"text": "🚪 መውጫ (Leave)", "callback_data": "main_menu"}]
+                    ]
+                }
                 
         elif data == "deposit_menu":
-            response_text = "💰 እባክዎ ገንዘብ ለማስገባት የሚፈልጉትን የክፍያ አማራጭ ይምረጡ (ገንዘቡ በቀጥታ ወደ እንያቸው አመርጋ አካውንት ይገባል)፦"
+            response_text = (
+                f"💰 **ኢትዮ ቢንጎ ጌም - ዲፖዚት (Deposit)**\n\n"
+                f"ገንዘብ ለማስገባት የሚፈልጉትን የባንክ አማራጭ ይምረጡ (ገንዘቡ በቀጥታ ወደ **{BANK_DETAILS['account_holder']}** አካውንት ይገባል)፦"
+            )
             reply_markup = {
                 "inline_keyboard": [
                     [{"text": "ንግድ ባንክ (CBE)", "callback_data": "dep_cbe"}, {"text": "ቴሌብር (Telebirr)", "callback_data": "dep_telebirr"}],
@@ -141,26 +153,28 @@ def telegram_webhook():
             }
             
         elif data == "dep_cbe":
-            response_text = f"🏦 **የንግድ ባንክ (CBE) አካውንት**\n\n• ስም: {BANK_DETAILS['account_holder']}\n• የሂሳብ ቁጥር: `{BANK_DETAILS['cbe']}`\n\nገንዘቡን ካስተላለፉ በኋላ ስክሪንሾት ይላኩ።"
+            response_text = f"🏦 **የንግድ ባንክ (CBE) አካውንት**\n\n• ስም: {BANK_DETAILS['account_holder']}\n• የሂሳብ ቁጥር: `{BANK_DETAILS['cbe']}`\n\nገንዘቡን ካስተላለፉ በኋላ ስክሪንሾት ቦቱ ላይ ይላኩ።"
             
         elif data == "dep_telebirr":
-            response_text = f"📱 **ቴሌብር (Telebirr) አካውንት**\n\n• ስም: {BANK_DETAILS['account_holder']}\n• ስልክ ቁጥር: `{BANK_DETAILS['telebirr']}`\n\nገንዘቡን ካስተላለፉ በኋላ ስክሪንሾት ይላኩ።"
+            response_text = f"📱 **ቴሌብር (Telebirr) አካውንት**\n\n• ስም: {BANK_DETAILS['account_holder']}\n• ስልክ ቁጥር: `{BANK_DETAILS['telebirr']}`\n\nገንዘቡን ካስተላለፉ በኋላ ስክሪንሾት ቦቱ ላይ ይላኩ።"
             
         elif data == "withdraw_menu":
             current_balance = user_data["balance"]
-            response_text = f"💳 **ዊዝድሮ (Withdrawal)**\n\nአሁን ያለዎት ቀሪ ሂሳብ: **{current_balance} ብር**\n\nገንዘብ ለማውጣት ሲፈልጉ የባንክ አካውንትዎን እና መጠኑን በመጻፍ ይላኩ።"
+            response_text = f"💳 **ዊዝድሮ (Withdrawal)**\n\nአሁን ያለዎት ቀሪ ሂሳብ: **{current_balance} ETB**\n\nገንዘብ ለማውጣት የባንክ አካውንትዎን እና መጠኑን በመጻፍ ለአድሚን ይላኩ።"
+            
+        elif data == "check_balance":
+            response_text = f"👛 **የኪስ ቦርሳ ቆጠራ (Check Balance)**\n\n• ተጠቃሚ: @{username}\n• ቀሪ ሂሳብ: **{user_data['balance']} ETB**"
             
         elif data == "invite_friend":
             bot_username = "Ethio_Bingo_Game_Bot"
             invite_link = f"https://t.me/{bot_username}?start=ref_{user_id}"
-            response_text = f"👥 **ጓደኛ በመጋበዝ ሽልማት ያግኙ!**\n\nይህንን የእርስዎን ልዩ ሊንክ ያጋሩ፦\n\n`{invite_link}`"
+            response_text = f"👥 **ጓደኛ በመጋበዝ ሽልማት ያግኙ!**\n\nይህንን የእርስዎን ልዩ ሊንክ ለጓደኞችዎ ያጋሩ፦\n\n`{invite_link}`"
             
         elif data == "contact":
-            response_text = "📞 ማንኛውም ጥያቄ ካሎት አድሚኑን ማግኘት ይችላሉ።"
-        elif data == "apply":
-            response_text = "📝 ለማመልከት የሚፈልጉትን መረጃ እዚህ ይុሙ ወይም ያግኙን።"
+            response_text = "📞 ማንኛውም ጥያቄ ወይም የቴክኒክ ችግር ካሎት **@{ADMIN_CHAT_ID}** በመጻፍ አድሚኑን ማግኘት ይችላሉ።"
+            
         elif data == "main_menu":
-            response_text = "እንኳን ወደ ዋናው ገጽ በደህና መጡ!"
+            response_text = "እንኳን ወደ **ኢትዮ ቢንጎ ጌም** ዋና ገጽ በደህና መጡ!"
             reply_markup = get_main_keyboard()
             
         payload = {
@@ -178,15 +192,15 @@ def telegram_webhook():
 def get_main_keyboard():
     return {
         "inline_keyboard": [
-            [{"text": "🎮 ቢንጎ ጨዋታ (Play Bingo)", "callback_data": "play_bingo"}],
+            [{"text": "🎮 ቢንጎ ጨዋታ (Play Bingo)", "callback_data": "play_menu"}],
             [{"text": "💰 ዲፖዚት (Deposit)", "callback_data": "deposit_menu"}, {"text": "💳 ዊዝድሮ (Withdraw)", "callback_data": "withdraw_menu"}],
-            [{"text": "👥 ጓደኛ ጋብዝ (Invite Friend)", "callback_data": "invite_friend"}],
-            [{"text": "📞 አግኙን (Contact Us)", "callback_data": "contact"}, {"text": "📝 ማመልከቻ (Apply)", "callback_data": "apply"}]
+            [{"text": "👛 ቀሪ ሂሳብ (Balance)", "callback_data": "check_balance"}, {"text": "👥 ጓደኛ ጋብዝ (Invite)", "callback_data": "invite_friend"}],
+            [{"text": "📞 አግኙን / እገዛ (Support)", "callback_data": "contact"}]
         ]
     }
 
 def show_main_menu(chat_id, url, user_data):
-    bot_message = f"👤 የቴሌግራም ዩዘር: @{user_data['username']}\n💰 ቀሪ ሂሳብ: {user_data['balance']} ብር\n\nየሚፈልጉትን አማራጭ ከታች ይምረጡ፦"
+    bot_message = f"👤 ዩዘር: @{user_data['username']}\n👛 ቀሪ ሂሳብ: {user_data['balance']} ETB\n\n© Ethio Bingo Game 2026. የሚፈልጉትን አማራጭ ከታች ይምረጡ፦"
     payload = {
         "chat_id": chat_id,
         "text": bot_message,
