@@ -14,7 +14,7 @@ users_db = {
 # ትክክለኛው የባንክ መረጃዎች (በእንያቸው አመርጋ ስም)
 BANK_DETAILS = {
     "account_holder": "እንያቸው አመርጋ (Enyachew Amerga)",
-    "cbe": "10006825286441",
+    "cbe": "1000682528641",
     "telebirr": "0944123180"
 }
 
