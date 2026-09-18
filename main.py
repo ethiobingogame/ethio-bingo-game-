@@ -22,9 +22,9 @@ HOUSE_COMMISSION_PERCENT = 20  # ለቤቱ የሚቆረጥ 20% ኮሚሽን
 
 @app.route('/')
 def index():
-    return "Ethio Bingo Mini App Backend with Telegram Token is Running Successfully!"
+    return "Ethio Bingo Mini App Backend with Telegram Buttons is Running Successfully!"
 
-# የቴሌግራም ዌብሆክ (Webhook) መቀበያ እና /start መልስ መስጫ
+# የቴሌግራም ዌብሆክ (Webhook) እና /start መልስ መስጫ ከአዝራሮች ጋር
 @app.route(f'/webhook/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
 def telegram_webhook():
     update = request.json
@@ -32,11 +32,25 @@ def telegram_webhook():
         chat_id = update["message"]["chat"]["id"]
         text = update["message"].get("text", "")
         
-        # ተጠቃሚው /start ሲል የሚሰጠው መልስ
         if text == "/start":
-            bot_message = "እንኳን ወደ Ethio Bingo Game በደህና መጡ! ለመጫወት እና አካውንትዎን ለማስተዳደር ከታች ያለውን ሊንክ ይጠቀሙ።"
+            bot_message = "እንኳን ወደ Ethio Bingo Game በደህና መጡ! ከታች ያሉትን አማራጮች በመጠቀም መጫወት እና አካውንትዎን ማስተዳደር ይችላሉ።"
+            
+            # ተጠቃሚው የሚጫናቸው ቆንጆ አዝራሮች (Inline Keyboards)
+            keyboard = {
+                "inline_keyboard": [
+                    [{"text": "🎮 ቢንጎ ጨዋታ (Play Bingo)", "callback_data": "play_bingo"}],
+                    [{"text": "💰 ዲፖዚት (Deposit)", "callback_data": "deposit"}, {"text": "💳 ዊዝድሮ (Withdraw)", "callback_data": "withdraw"}],
+                    [{"text": "👥 ጓደኛ ጋብዝ (Invite Friend)", "callback_data": "invite"}],
+                    [{"text": "📞 አግኙን (Contact Us)", "callback_data": "contact"}, {"text": "📝 ማመልከቻ (Apply)", "callback_data": "apply"}]
+                ]
+            }
+            
             url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-            payload = {"chat_id": chat_id, "text": bot_message}
+            payload = {
+                "chat_id": chat_id, 
+                "text": bot_message,
+                "reply_markup": keyboard
+            }
             requests.post(url, json=payload)
             
     return jsonify({"status": "ok"})
@@ -80,7 +94,6 @@ def play_game():
     
     current_balance = users_db[user_id]["balance"]
     
-    # ባላንስ ማነስ አለማነሱን ማረጋገጥ (Low Balance Check)
     if current_balance < ticket_price:
         return jsonify({
             "status": "low_balance",
@@ -89,7 +102,6 @@ def play_game():
             "required": ticket_price
         })
     
-    # ባላንሱ በቂ ከሆነ ከሂሳቡ ላይ ቆርጦ ጨዋታውን መጀመር
     users_db[user_id]["balance"] -= ticket_price
     
     return jsonify({
