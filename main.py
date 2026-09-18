@@ -1,5 +1,5 @@
 import os
-import time
+import threading
 from flask import Flask, render_template
 import telebot
 
@@ -15,7 +15,6 @@ def home():
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     markup = telebot.types.InlineKeyboardMarkup()
-    # የእርስዎን ትክክለኛ የ Railway 8080 ዱሜን እዚህ ያስገቡ
     web_app_url = "https://ethio-bingo-game-production.up.railway.app"
     mini_app_btn = telebot.types.InlineKeyboardButton(
         text="🎮 ኢትዮ ቢንጎ ክፈት", 
@@ -30,7 +29,6 @@ def send_welcome(message):
         parse_mode='Markdown'
     )
 
-# ቦቱ ያለማቋረጥ መልዕክት እንዲቀበል (Background Polling)
 def run_bot():
     try:
         bot.remove_webhook()
@@ -39,11 +37,10 @@ def run_bot():
         print(e)
 
 if __name__ == '__main__':
-    import threading
-    # ቦቱን እና ፍላስክ ሰርቨሩን በአንድ ላይ ማስጀመር
     t = threading.Thread(target=run_bot)
     t.daemon = True
     t.start()
     
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
+
