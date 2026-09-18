@@ -1,3 +1,4 @@
+import random
 import requests
 from flask import Flask, jsonify, request
 
@@ -7,9 +8,9 @@ app = Flask(__name__)
 TELEGRAM_BOT_TOKEN = "8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM"
 
 # 👑 የአድሚን ቻት አይዲ
-ADMIN_CHAT_ID = "Enyachew19"
+ADMIN_CHAT_ID = "1219" 
 
-# የተጠቃሚዎች የውሂብ ማከማቻ (የምዝገባ ሁኔታን ለመያዝ)
+# የተጠቃሚዎች የውሂብ ማከማቻ
 users_db = {}
 
 # 💯 የባንክ መረጃዎች (የእርስዎ አካውንት)
@@ -18,6 +19,23 @@ BANK_DETAILS = {
     "cbe": "10006825286441",
     "telebirr": "0944123180"
 }
+
+# 100 የተለያዩ የቢንጎ ቦርዶችን በዘፈቀደ የሚያመነጭ ፊርማ (Function)
+def generate_unique_bingo_board():
+    # B (1-15), I (16-30), N (31-45), G (46-60), O (61-75)
+    b = random.sample(range(1, 16), 5)
+    i = random.sample(range(16, 31), 5)
+    n = random.sample(range(31, 46), 4) # መሀል ላይ FREE ስለሚኖር 4 ቁጥር
+    n.insert(2, "FR") # FREE ሴል
+    g = random.sample(range(46, 61), 5)
+    o = random.sample(range(61, 76), 5)
+    
+    board_text = " B    I    N    G    O \n------------------------\n"
+    for r in range(5):
+        val_n = "FREE" if n[r] == "FR" else f"{n[r]:2d}"
+        board_text += f" {b[r]:2d} | {i[r]:2d} | {val_n} | {g[r]:2d} | {o[r]:2d} \n"
+    board_text += "------------------------"
+    return board_text
 
 @app.route('/')
 def index():
@@ -33,44 +51,33 @@ def telegram_webhook():
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     answer_callback_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery"
 
-    # 1. ጽሁፍ ወይም ምዝገባ ሲላክ
+    # 1. ጽሁፍ ሲላክ (/start)
     if "message" in update:
         message = update["message"]
         chat_id = message["chat"]["id"]
         user_id = str(message["from"]["id"])
+        username = message["from"].get("username", f"User_{user_id}")
         text = message.get("text", "").strip()
         
-        # ተጠቃሚው መመዝገቡን ማረጋገጥ
         if user_id not in users_db:
-            users_db[user_id] = {"registered": False, "balance": 10.0, "name": ""}
+            users_db[user_id] = {
+                "registered": True, 
+                "balance": 10.0, 
+                "username": username
+            }
             
         user_data = users_db[user_id]
         
         if text.startswith("/start"):
-            if not user_data["registered"]:
-                # ገና ካልተመዘገበ የምዝገባ ጥያቄ እናቀርብለታለን
-                bot_message = "እንኳን ወደ Ethio Bingo Game በደህና መጡ! 🎮\n\nእባክዎ ለመመዝገብ **ስምዎን** (Full Name) በዚህ ቻት ውስጥ ጽፈው ይላኩን።"
-                requests.post(url, json={"chat_id": chat_id, "text": bot_message})
-                return jsonify({"status": "ok"})
-            else:
-                # ከተመዘገበ ቀጥታ ዋናውን ምናሌ እናሳያለን
-                show_main_menu(chat_id, url, user_data)
-                
-        elif not user_data["registered"]:
-            # ተጠቃሚው የላከውን ስም እንደ ምዝገባ እንወስደዋለን
-            user_data["name"] = text
-            user_data["registered"] = True
-            
-            bot_message = f"✅ የተከበሩ/ቺ {text} በሰላም ተመዝግበዋል! ጀማሪ ቦነስ 10 ብር ተሰጥቶዎታል።\n\nአሁን ከታች ያሉትን አማራጮች መጠቀም ይችላሉ፦"
+            bot_message = f"እንኳን ወደ Ethio Bingo Game በደህና መጡ! 🎮\n\nየቴሌግራም አካውንትዎ (@{username}) ተመዝግቧል።"
             requests.post(url, json={"chat_id": chat_id, "text": bot_message})
             show_main_menu(chat_id, url, user_data)
-            
+                
         elif "photo" in message:
-            # ስክሪንሾት ሲልክ
             bot_message = "✅ የክፍያ ስክሪንሾትዎ በእንያቸው አመርጋ አካውንት ተቀብሏል! አድሚኑ አረጋግጦ ሒሳብዎን ይጨምርልዎታል።"
             requests.post(url, json={"chat_id": chat_id, "text": bot_message})
             
-            admin_notification = f"🔔 አዲስ የዲፖዚት ስክሪንሾት ከተጠቃሚ (ስም: {user_data.get('name')}, ID: {user_id}) ደርሷል!"
+            admin_notification = f"🔔 አዲስ የዲፖዚት ስክሪንሾት ከቴሌግራም ተጠቃሚ (@{username}, ID: {user_id}) ደርሷል!"
             requests.post(url, json={"chat_id": ADMIN_CHAT_ID, "text": admin_notification})
 
     # 2. አዝራሮች ሲጫኑ (Callback Query)
@@ -79,19 +86,27 @@ def telegram_webhook():
         callback_id = callback_query["id"]
         chat_id = callback_query["message"]["chat"]["id"]
         user_id = str(callback_query["from"]["id"])
+        username = callback_query["from"].get("username", f"User_{user_id}")
         data = callback_query.get("data", "")
         
         requests.post(answer_callback_url, json={"callback_query_id": callback_id})
         
         if user_id not in users_db:
-            users_db[user_id] = {"registered": False, "balance": 10.0, "name": ""}
+            users_db[user_id] = {"registered": True, "balance": 10.0, "username": username}
             
         user_data = users_db[user_id]
         response_text = ""
         reply_markup = None
         
         if data == "play_bingo":
-            response_text = "🎮 **ወደ ቢንጎ ጨዋታው በሰላም መጡ!**\n\nእባክዎ መጫወት የሚፈልጉትን የቲኬት ዋጋ ይምረጡ፦"
+            # 🎯 ለእያንዳንዱ ተጫዋች ከ100 የተለያዩ ቦርዶች ውስጥ የተለየ ቦርድ በራሱ ጌነሬት ሆኖ ይወጣል!
+            unique_board = generate_unique_bingo_board()
+            
+            response_text = (
+                "🎮 **የእርስዎ የቢንጎ ጨዋታ ሰንጠረዥ (Unique Bingo Board)**\n\n"
+                f"```\n{unique_board}\n```\n"
+                "እባክዎ መጫወት የሚፈልጉትን የቲኬት ዋጋ ይምረጡ፦"
+            )
             reply_markup = {
                 "inline_keyboard": [
                     [{"text": "🎫 ቲኬት 10 ብር", "callback_data": "bet_10"}, {"text": "🎫 ቲኬት 20 ብር", "callback_data": "bet_20"}],
@@ -143,7 +158,7 @@ def telegram_webhook():
         elif data == "contact":
             response_text = "📞 ማንኛውም ጥያቄ ካሎት አድሚኑን ማግኘት ይችላሉ።"
         elif data == "apply":
-            response_text = "📝 ለማመልከት የሚፈልጉትን መረጃ እዚህ ይሙሉ ወይም ያግኙን።"
+            response_text = "📝 ለማመልከት የሚፈልጉትን መረጃ እዚህ ይុሙ ወይም ያግኙን።"
         elif data == "main_menu":
             response_text = "እንኳን ወደ ዋናው ገጽ በደህና መጡ!"
             reply_markup = get_main_keyboard()
@@ -171,7 +186,7 @@ def get_main_keyboard():
     }
 
 def show_main_menu(chat_id, url, user_data):
-    bot_message = f"👤 መለያ ስም: {user_data['name']}\n💰 ቀሪ ሂሳብ: {user_data['balance']} ብር\n\nየሚፈልጉትን አማራጭ ከታች ይምረጡ፦"
+    bot_message = f"👤 የቴሌግራም ዩዘር: @{user_data['username']}\n💰 ቀሪ ሂሳብ: {user_data['balance']} ብር\n\nየሚፈልጉትን አማራጭ ከታች ይምረጡ፦"
     payload = {
         "chat_id": chat_id,
         "text": bot_message,
