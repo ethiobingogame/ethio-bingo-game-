@@ -1,5 +1,6 @@
 import os
-from flask import Flask, render_template, request, jsonify
+import time
+from flask import Flask, render_template
 import telebot
 
 TOKEN = os.environ.get('BOT_TOKEN', 'YOUR_BOT_TOKEN')
@@ -14,6 +15,7 @@ def home():
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     markup = telebot.types.InlineKeyboardMarkup()
+    # የእርስዎን ትክክለኛ የ Railway 8080 ዱሜን እዚህ ያስገቡ
     web_app_url = "https://ethio-bingo-game-production.up.railway.app"
     mini_app_btn = telebot.types.InlineKeyboardButton(
         text="🎮 ኢትዮ ቢንጎ ክፈት", 
@@ -23,18 +25,25 @@ def send_welcome(message):
     
     bot.reply_to(
         message, 
-        "ሰላም! ወደ **ኢትዮ ቢንጎ ጌም** እንኳን ደህና መጡ።\n\n ጨዋታውን ለመጀመር እና የኪስ ቦርሳዎን ለማስተዳደር ከታች ያለውን ቁልፍ ይጫኑ!", 
+        "ሰላም! ወደ **ኢትዮ ቢንጎ ጌም** እንኳን ደህና መጡ።\n\nጨዋታውን ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ!", 
         reply_markup=markup, 
         parse_mode='Markdown'
     )
 
-@app.route(f'/{TOKEN}', methods=['POST'])
-def webhook():
-    json_str = request.get_data().decode('utf-8')
-    update = telebot.types.Update.de_json(json_str)
-    bot.process_new_updates([update])
-    return "OK", 200
+# ቦቱ ያለማቋረጥ መልዕክት እንዲቀበል (Background Polling)
+def run_bot():
+    try:
+        bot.remove_webhook()
+        bot.infinity_polling(none_stop=True)
+    except Exception as e:
+        print(e)
 
 if __name__ == '__main__':
+    import threading
+    # ቦቱን እና ፍላስክ ሰርቨሩን በአንድ ላይ ማስጀመር
+    t = threading.Thread(target=run_bot)
+    t.daemon = True
+    t.start()
+    
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
