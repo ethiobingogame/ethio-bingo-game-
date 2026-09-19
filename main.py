@@ -3,9 +3,11 @@ import threading
 from flask import Flask, render_template
 import telebot
 
+# የቦት ቶክን እና የሬይልዌይ ሊንክ
 TOKEN = "8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM"
-bot = telebot.TeleBot(TOKEN)
+WEB_APP_URL = "https://ethio-bingo-game-production-d793.up.railway.app"
 
+bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
 @app.route('/')
@@ -18,10 +20,9 @@ def home():
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     markup = telebot.types.InlineKeyboardMarkup()
-    web_app_url = "https://ethio-bingo-game-production.up.railway.app"
     mini_app_btn = telebot.types.InlineKeyboardButton(
         text="🎮 ኢትዮ ቢንጎ ክፈት", 
-        web_app=telebot.types.WebAppInfo(url=web_app_url)
+        web_app=telebot.types.WebAppInfo(url=WEB_APP_URL)
     )
     markup.add(mini_app_btn)
     
@@ -39,7 +40,7 @@ def run_bot():
     except Exception as e:
         print(f"Bot error: {e}")
 
-# ቦቱ ሰርቨሩ ሲጀምር አብሮ እንዲነቃ እዚህ ጋር ተደረገ (Gunicorn እንዲያነበው)
+# ቦቱ ሰርቨሩ ሲጀመር አብሮ እንዲነቃ የሚደረግበት ትሬድ
 bot_thread = threading.Thread(target=run_bot)
 bot_thread.daemon = True
 bot_thread.start()
