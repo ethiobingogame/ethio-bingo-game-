@@ -3,9 +3,9 @@ import threading
 from flask import Flask, render_template
 import telebot
 
-# የቦት ቶክን እና የሬይልዌይ ሊንክ
+# የቦት ቶክን እና አዲሱ የሬይልዌይ ሊንክ
 TOKEN = "8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM"
-WEB_APP_URL = "https://ethio-bingo-game-production-d793.up.railway.app"
+WEB_APP_URL = "https://ethio-bingo-game-production.up.railway.app"
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
