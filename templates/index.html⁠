@@ -97,9 +97,7 @@
         <!-- ቦርድ መምረጫ (ከ1 እስከ 200 ቁጥሮች) -->
         <section id="board-selection">
             <h3>የቢንጎ ቦርድ ይምረጡ (ከ1 - 200)</h3>
-            <div id="numbers-grid">
-                <!-- ጃቫስክሪፕት በሉፕ ቁጥሮቹን እዚህ ይሞላቸዋል -->
-            </div>
+            <div id="numbers-grid"></div>
             <button id="start-game-btn" class="action-btn" disabled>ጨዋታ ጀምር (Start)</button>
         </section>
 
@@ -116,7 +114,6 @@
             const startBtn = document.getElementById("start-game-btn");
             let selectedBoard = null;
 
-            // ከ1 እስከ 200 ቁጥሮችን በራስ-ሰር መፍጠር
             for (let i = 1; i <= 200; i++) {
                 const btn = document.createElement("button");
                 btn.classList.add("num-cell");
@@ -130,7 +127,6 @@
                 grid.appendChild(btn);
             }
 
-            // ጨዋታ ሲጀመር
             startBtn.addEventListener("click", () => {
                 if (selectedBoard) {
                     alert(`ቦርድ ቁጥር ${selectedBoard} ተመርጧል። ጨዋታው ይጀመራል!`);
@@ -139,12 +135,11 @@
                 }
             });
 
-            // ቢንጎ ማረጋገጫ አዝራር ሎጂክ
             document.getElementById("bingo-claim-btn").addEventListener("click", () => {
                 fetch('/api/check-bingo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ is_valid: true }) // እንደ ትክክለኛነቱ ሁኔታ ይስተካከላል
+                    body: JSON.stringify({ is_valid: true })
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -160,4 +155,5 @@
     </script>
 </body>
 </html>
+
 
