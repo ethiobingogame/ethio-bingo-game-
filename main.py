@@ -3,7 +3,6 @@ import threading
 from flask import Flask, render_template
 import telebot
 
-# የሰጡት ትክክለኛ የቦት ቶክን
 TOKEN = "8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM"
 bot = telebot.TeleBot(TOKEN)
 
@@ -40,10 +39,11 @@ def run_bot():
     except Exception as e:
         print(f"Bot error: {e}")
 
+# ቦቱ ሰርቨሩ ሲጀምር አብሮ እንዲነቃ እዚህ ጋር ተደረገ (Gunicorn እንዲያነበው)
+bot_thread = threading.Thread(target=run_bot)
+bot_thread.daemon = True
+bot_thread.start()
+
 if __name__ == '__main__':
-    t = threading.Thread(target=run_bot)
-    t.daemon = True
-    t.start()
-    
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
