@@ -8,128 +8,100 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body class="bg-indigo-950 text-white font-sans">
-
     <div class="max-w-md mx-auto p-4 min-h-screen flex flex-col justify-between">
         <!-- Header -->
-        <div class="flex justify-between items-center bg-indigo-900 p-3 rounded-xl shadow-lg">
-            <span id="user-balance" class="text-yellow-400 font-bold text-lg">💰 0.00 ETB</span>
-            <span class="font-extrabold tracking-wider text-xl">ኢትዮ ቢንጎ</span>
-            <button onclick="loadBalance()" class="bg-blue-600 px-3 py-1 rounded-lg text-sm">አድስ</button>
+        <div class="flex justify-between items-center bg-indigo-900 p-3 rounded-xl">
+            <span id="user-balance" class="text-yellow-400 font-bold">ብር: 0</span>
+            <span class="font-extrabold tracking-wider text-yellow-400">ኢትዮ ቢንጎ</span>
+            <button onclick="loadBalance()" class="bg-blue-600 px-3 py-1 rounded-lg text-sm">እድሳት</button>
         </div>
 
         <!-- Main Menu Screen -->
         <div id="main-menu" class="my-auto space-y-3">
-            <h2 class="text-center text-2xl font-bold mb-6 text-yellow-400">ዋና ምናሌ (Main Menu)</h2>
+            <h2 class="text-center text-2xl font-bold mb-6">እንኳን ደህና መጡ</h2>
             
-            <button onclick="showScreen('play-screen')" class="w-full bg-gradient-to-r from-green-600 to-emerald-700 p-4 rounded-xl font-bold text-lg shadow-lg flex justify-between items-center">
-                <span>🎮 ጨዋታ ጀምር (Play)</span> <span>➔</span>
+            <button onclick="showScreen('play-screen')" class="w-full bg-indigo-900 p-4 rounded-xl text-center font-bold text-xl hover:bg-indigo-800 transition">
+                <span>🎮 ጨዋታ ጀምር (Play)</span>
             </button>
-            <button onclick="showScreen('deposit-screen')" class="w-full bg-indigo-900 hover:bg-indigo-800 p-4 rounded-xl font-bold text-lg shadow-lg flex justify-between items-center border border-indigo-700">
-                <span>💳 ገንዘብ አስገባ (Deposit)</span> <span>➔</span>
+            <button onclick="showScreen('deposit-screen')" class="w-full bg-indigo-900 p-4 rounded-xl text-center font-bold text-xl hover:bg-indigo-800 transition">
+                <span>💰 ገንዘብ አስገባ (Deposit)</span>
             </button>
-            <button onclick="showScreen('withdraw-screen')" class="w-full bg-indigo-900 hover:bg-indigo-800 p-4 rounded-xl font-bold text-lg shadow-lg flex justify-between items-center border border-indigo-700">
-                <span>💸 ገንዘብ አውጣ (Withdraw)</span> <span>➔</span>
+            <button onclick="showScreen('withdraw-screen')" class="w-full bg-indigo-900 p-4 rounded-xl text-center font-bold text-xl hover:bg-indigo-800 transition">
+                <span>💸 ገንዘብ አውጣ (Withdraw)</span>
             </button>
-            <button onclick="showScreen('balance-screen')" class="w-full bg-indigo-900 hover:bg-indigo-800 p-4 rounded-xl font-bold text-lg shadow-lg flex justify-between items-center border border-indigo-700">
-                <span>📊 ቀሪ ሂሳብ (Check Balance)</span> <span>➔</span>
+            <button onclick="showScreen('balance-screen')" class="w-full bg-indigo-900 p-4 rounded-xl text-center font-bold text-xl hover:bg-indigo-800 transition">
+                <span>📊 ቀሪ ሂሳብ (Check Balance)</span>
             </button>
-            <button onclick="showScreen('invite-screen')" class="w-full bg-indigo-900 hover:bg-indigo-800 p-4 rounded-xl font-bold text-lg shadow-lg flex justify-between items-center border border-indigo-700">
-                <span>👥 ጓደኞችን ጋብዝ (Invite Friends)</span> <span>➔</span>
+            <button onclick="showScreen('invite-screen')" class="w-full bg-indigo-900 p-4 rounded-xl text-center font-bold text-xl hover:bg-indigo-800 transition">
+                <span>👥 ጓደኛሞች ጋብዝ (Invite Friends)</span>
             </button>
-            <button onclick="showScreen('contact-screen')" class="w-full bg-indigo-900 hover:bg-indigo-800 p-4 rounded-xl font-bold text-lg shadow-lg flex justify-between items-center border border-indigo-700">
-                <span>📞 አግኙን (Contact Us)</span> <span>➔</span>
+            <button onclick="showScreen('contact-screen')" class="w-full bg-indigo-900 p-4 rounded-xl text-center font-bold text-xl hover:bg-indigo-800 transition">
+                <span>📞 አግኘን (Contact Us)</span>
             </button>
         </div>
 
         <!-- Play Screen (Stake Selection) -->
         <div id="play-screen" class="hidden my-auto space-y-4">
-            <button onclick="showScreen('main-menu')" class="text-sm text-yellow-400 mb-2">❮ ወደ ዋናው ምናሌ ተመለስ</button>
-            <h2 class="text-center text-xl font-bold mb-4">የውርርድ መጠን ይምረጡ (Stake)</h2>
+            <button onclick="showScreen('main-menu')" class="text-blue-400 mb-2">← ወደ ዋናው ምናሌ</button>
+            <h2 class="text-center text-xl font-bold">የመወራረጃ መጠን ይምረጡ</h2>
+            <div id="current-number" class="text-center text-lg text-yellow-400 font-bold"></div>
             
-            <div onclick="startTheGame(10)" class="bg-indigo-900 p-4 rounded-xl flex justify-between items-center cursor-pointer border border-indigo-700">
-                <div><span class="text-xl font-bold text-yellow-400">10 ETB</span><p class="text-xs text-gray-400">ፈጣን ዙር</p></div>
-                <button class="bg-yellow-500 text-black font-bold px-5 py-2 rounded-lg">ጀምር</button>
+            <div onclick="startGame(10)" class="bg-indigo-900 p-4 rounded-xl text-center cursor-pointer hover:bg-indigo-800">
+                <span class="text-xl font-bold text-yellow-400">10 ብር (10 Birr)</span>
             </div>
-            <div onclick="startTheGame(20)" class="bg-indigo-900 p-4 rounded-xl flex justify-between items-center cursor-pointer border border-indigo-700">
-                <div><span class="text-xl font-bold text-yellow-400">20 ETB</span><p class="text-xs text-gray-400">መካከለኛ ዙር</p></div>
-                <button class="bg-yellow-500 text-black font-bold px-5 py-2 rounded-lg">ጀምር</button>
+            <div onclick="startGame(20)" class="bg-indigo-900 p-4 rounded-xl text-center cursor-pointer hover:bg-indigo-800">
+                <span class="text-xl font-bold text-yellow-400">20 ብር (20 Birr)</span>
             </div>
-            <div onclick="startTheGame(50)" class="bg-indigo-900 p-4 rounded-xl flex justify-between items-center cursor-pointer border border-indigo-700">
-                <div><span class="text-xl font-bold text-yellow-400">50 ETB</span><p class="text-xs text-gray-400">ልዩ ዙር</p></div>
-                <button class="bg-yellow-500 text-black font-bold px-5 py-2 rounded-lg">ጀምር</button>
+            <div onclick="startGame(50)" class="bg-indigo-900 p-4 rounded-xl text-center cursor-pointer hover:bg-indigo-800">
+                <span class="text-xl font-bold text-yellow-400">50 ብር (50 Birr)</span>
             </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden space-y-3 my-auto">
+            <button onclick="showScreen('play-screen')" class="text-blue-400">← ተመለስ</button>
+            <div id="board-grid" class="grid grid-cols-5 gap-1 text-center"></div>
+            <button onclick="alert('ቢንጎ ተብሏል! 🎉')" class="w-full bg-green-600 py-3 rounded-xl font-bold text-lg mt-4">ቢንጎ! (Bingo)</button>
         </div>
 
         <!-- Deposit Screen -->
-        <div id="deposit-screen" class="hidden my-auto space-y-3">
-            <button onclick="showScreen('main-menu')" class="text-sm text-yellow-400">❮ ተመለስ</button>
-            <h2 class="text-center text-xl font-bold">ገንዘብ ማስገባት (Deposit)</h2>
-            <div class="bg-indigo-900 p-3 rounded-xl text-sm space-y-2 border border-indigo-700">
-                <p class="font-bold text-yellow-400">1. የንግድ ባንክ (CBE):</p>
-                <p class="bg-indigo-950 p-2 rounded text-xs">አካውንት: 1000123456789 (በእኛ ስም)</p>
-                <p class="font-bold text-yellow-400 mt-2">2. ቴሌብር (Telebirr):</p>
-                <p class="bg-indigo-950 p-2 rounded text-xs">ስልክ ቁጥር: 0912345678 (በእኛ ስም)</p>
-            </div>
-            <div class="space-y-2">
-                <input type="text" id="ftm-input" placeholder="የክፍያ FTM ወይም የደረሰኝ ቁጥር ያስገቡ" class="w-full p-3 rounded-xl bg-indigo-900 text-white border border-indigo-700 text-sm">
-                <input type="number" id="deposit-amount" placeholder="የገባውን የብር መጠን (ETB)" class="w-full p-3 rounded-xl bg-indigo-900 text-white border border-indigo-700 text-sm">
-                <button onclick="submitDeposit()" class="w-full bg-green-600 hover:bg-green-700 font-bold py-3 rounded-xl shadow-lg">ክፍያ አረጋግጥ (Verify Deposit)</button>
-            </div>
+        <div id="deposit-screen" class="hidden my-auto space-y-4">
+            <button onclick="showScreen('main-menu')" class="text-blue-400">← ተመለስ</button>
+            <h2 class="text-center text-xl font-bold">ገንዘብ ማስገቢያ</h2>
+            <input type="number" id="deposit-amount" placeholder="የብር መጠን ያስገቡ" class="w-full p-3 rounded-xl bg-indigo-900 text-white border border-indigo-700">
+            <button onclick="submitDeposit()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">አስገባ</button>
         </div>
 
         <!-- Withdraw Screen -->
-        <div id="withdraw-screen" class="hidden my-auto space-y-3">
-            <button onclick="showScreen('main-menu')" class="text-sm text-yellow-400">❮ ተመለስ</button>
-            <h2 class="text-center text-xl font-bold">ገንዘብ ማውጣት (Withdraw)</h2>
-            <input type="text" placeholder="የባንክ ወይም ቴሌብር ቁጥርዎ" class="w-full p-3 rounded-xl bg-indigo-900 text-white border border-indigo-700 text-sm">
-            <input type="number" placeholder="የሚወጣው የብር መጠን" class="w-full p-3 rounded-xl bg-indigo-900 text-white border border-indigo-700 text-sm">
-            <button onclick="alert('የውጪ ጥያቄዎ ተቀባይነት አግኝቷል!')" class="w-full bg-red-600 font-bold py-3 rounded-xl">ጥያቄ ላክ</button>
+        <div id="withdraw-screen" class="hidden my-auto space-y-4">
+            <button onclick="showScreen('main-menu')" class="text-blue-400">← ተመለስ</button>
+            <h2 class="text-center text-xl font-bold">ገንዘብ ማውጫ</h2>
+            <input type="text" placeholder="የባንክ ወይም የቴሌብር ቁጥር" class="w-full p-3 rounded-xl bg-indigo-900 text-white border border-indigo-700">
+            <input type="number" placeholder="የሚወጣው የብር መጠን" class="w-full p-3 rounded-xl bg-indigo-900 text-white border border-indigo-700">
+            <button onclick="alert('የማውጣት ጥያቄዎ ተቀብሏል!')" class="w-full bg-blue-600 py-3 rounded-xl font-bold">አውጣ</button>
         </div>
 
         <!-- Balance Screen -->
         <div id="balance-screen" class="hidden my-auto space-y-4 text-center">
-            <button onclick="showScreen('main-menu')" class="text-sm text-yellow-400 text-left block">❮ ተመለስ</button>
-            <h2 class="text-xl font-bold">የእርስዎ ቀሪ ሂሳብ</h2>
-            <div class="bg-indigo-900 p-6 rounded-2xl border border-indigo-700">
-                <p class="text-3xl font-black text-yellow-400" id="display-balance">0.00 ETB</p>
-            </div>
+            <button onclick="showScreen('main-menu')" class="text-blue-400 text-left block">← ተመለስ</button>
+            <h2 class="text-xl font-bold">የቀሪ ሂሳብዎ ሁኔታ</h2>
+            <p id="display-balance" class="text-3xl font-bold text-yellow-400">0 ብር</p>
         </div>
 
         <!-- Invite Screen -->
-        <div id="invite-screen" class="hidden my-auto space-y-3 text-center">
-            <button onclick="showScreen('main-menu')" class="text-sm text-yellow-400 text-left block">❮ ተመለስ</button>
-            <h2 class="text-xl font-bold">ጓደኞችን ጋብዝ (Invite)</h2>
-            <p class="text-xs text-gray-300">ይህንን ሊንክ ለጓደኞችዎ በማጋራት ቦነሶችን ያግኙ!</p>
-            <input type="text" readonly value="https://t.me/Ethio_Bingo_Bot?start=ref123" class="w-full p-3 rounded-xl bg-indigo-900 text-yellow-400 text-center text-xs">
+        <div id="invite-screen" class="hidden my-auto space-y-4 text-center">
+            <button onclick="showScreen('main-menu')" class="text-blue-400 text-left block">← ተመለስ</button>
+            <h2 class="text-xl font-bold">ጓደኛዎችን ጋብዝ (Invite Friends)</h2>
+            <p class="text-gray-300 text-sm">ይህንን ሊንክ በመላክ ጓደኛዎችዎን ይጋብዙ:</p>
+            <input type="text" readonly value="https://t.me/Ethio_bingo_game_bot" class="w-full p-3 rounded-xl bg-indigo-900 text-center text-yellow-400 border border-indigo-700">
         </div>
 
         <!-- Contact Screen -->
-        <div id="contact-screen" class="hidden my-auto space-y-3 text-center">
-            <button onclick="showScreen('main-menu')" class="text-sm text-yellow-400 text-left block">❮ ተመለስ</button>
-            <h2 class="text-xl font-bold">አግኙን (Contact Us)</h2>
-            <div class="bg-indigo-900 p-4 rounded-xl text-sm border border-indigo-700">
-                <p>ለማንኛውም ጥያቄ ወይም እርዳታ:</p>
-                <p class="text-yellow-400 font-bold mt-2">ቴሌግራም ድጋፍ: @EthioSupport</p>
-            </div>
+        <div id="contact-screen" class="hidden my-auto space-y-4 text-center">
+            <button onclick="showScreen('main-menu')" class="text-blue-400 text-left block">← ተመለስ</button>
+            <h2 class="text-xl font-bold">አግኘን (Contact Us)</h2>
+            <p class="text-yellow-400 font-bold">ለማንኛውም ጥያቄ በቴሌግራም ያነጋግሩን: @Support</p>
         </div>
-
-        <!-- Game Screen (Hidden initially) -->
-        <div id="game-screen" class="hidden space-y-3 my-auto">
-            <button onclick="showScreen('play-screen')" class="text-sm text-yellow-400">❮ ተመለስ</button>
-            <div class="bg-indigo-900 p-4 rounded-xl text-center border-2 border-yellow-500">
-                <p class="text-xs text-gray-300">አሁን የተጠራው ቁጥር (Current Call)</p>
-                <h1 id="current-number" class="text-4xl font-black text-yellow-400 my-1">G-58</h1>
-            </div>
-            <div class="bg-white text-black p-3 rounded-xl shadow-xl">
-                <div class="grid grid-cols-5 gap-1 text-center font-bold text-indigo-900 mb-2">
-                    <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
-                </div>
-                <div id="board-grid" class="grid grid-cols-5 gap-1 text-center font-semibold"></div>
-            </div>
-            <button onclick="alert('ቢንጎዎ ተረጋግጧል! 🎉')" class="w-full bg-red-600 text-white font-black text-xl py-3 rounded-xl animate-pulse">BINGO!</button>
-        </div>
-
-        <div class="text-center text-xs text-gray-500 mt-4">ኢትዮ ቢንጎ ጌም 2026</div>
     </div>
 
     <script>
@@ -140,7 +112,7 @@
             document.getElementById(screenId).classList.remove('hidden');
         }
 
-        function startTheGame(stake) {
+        function startGame(stake) {
             showScreen('game-screen');
             generateBoard();
         }
@@ -148,30 +120,28 @@
         function generateBoard() {
             const grid = document.getElementById('board-grid');
             grid.innerHTML = '';
-            const sample = [12, 27, 39, 55, 66, 15, 28, 33, 53, 70, 9, 16, '*', 52, 74, 11, 29, 45, 51, 75, 6, 22, 44, 49, 63];
+            const sample = [12, 27, 39, 55, 66, 15, 28, 33, 50, 71];
             sample.forEach(num => {
                 const cell = document.createElement('div');
-                cell.className = "p-2 bg-gray-200 rounded text-sm font-bold cursor-pointer text-indigo-900";
+                cell.className = "p-2 bg-gray-800 rounded text-center cursor-pointer font-bold";
                 cell.innerText = num;
-                if(num === '*') cell.className += " bg-yellow-400 text-white";
-                cell.onclick = () => { cell.classList.toggle('bg-green-500'); cell.classList.toggle('text-white'); };
+                cell.onclick = () => cell.classList.toggle('bg-yellow-500');
                 grid.appendChild(cell);
             });
         }
 
         function loadBalance() {
-            document.getElementById('user-balance').innerText = "💰 50.00 ETB";
-            document.getElementById('display-balance').innerText = "50.00 ETB";
+            document.getElementById('user-balance').innerText = "ብር: 100";
+            document.getElementById('display-balance').innerText = "100 ብር";
         }
 
         function submitDeposit() {
-            const ftm = document.getElementById('ftm-input').value;
-            const amt = document.getElementById('deposit-amount').value;
-            if(!ftm || !amt) {
-                alert('እባክዎ የፍቲኤም ቁጥር እና የብር መጠን ያስገቡ!');
+            let amt = document.getElementById('deposit-amount').value;
+            if(!amt) {
+                alert('እባክዎ ትክክለኛ የብር መጠን ያስገቡ');
                 return;
             }
-            alert('ክፍያዎ በትክክል ተረጋግጧል! ' + amt + ' ብር ወደ አካውንትዎ ገቢ ሆኗል 🎉');
+            alert('የቁጠባ ጥያቄዎ ተቀብሏል! + ' + amt + ' ብር ተጨምሯል');
             showScreen('main-menu');
         }
     </script>
