@@ -3,7 +3,8 @@ from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "YOUR_BOT_TOKEN")
+# የቦት ቶከኑ በቀጥታ እዚህ ገብቷል (Build Error እንዳያመጣ)
+BOT_TOKEN = "8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM"
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "YOUR_ADMIN_CHAT_ID")
 
 user_balances = {}
@@ -79,4 +80,3 @@ def check_bingo():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
