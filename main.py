@@ -1,30 +1,39 @@
 import os
 import requests
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify
 
-# ቴምፕሌቶቹ እና ስታቲክ ፋይሎቹ አሁን ባለበት ፎልደር ውስጥ እንዲፈልግ ይደረጋል
-app = Flask(__name__, template_folder='.', static_folder='.')
+app = Flask(__name__)
 
 BOT_TOKEN = "8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+RAILWAY_URL = "https://Ethio-bingo-game-production.up.railway.app"
 
 user_balances = {}
 house_commission_balance = 0
 
-# ሚኒ-አፑን (index.html) በቀጥታ ማንበቢያ መንገድ
+# 1. የ index.html ፋይልን በትክክል ከዋናው ማህደር ማንበቢያ
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+INDEX_PATH = os.path.join(BASE_DIR, 'index.html')
+
 @app.route('/')
 def serve_index():
-    try:
-        with open('index.html', 'r', encoding='utf-8') as f:
+    if os.path.exists(INDEX_PATH):
+        with open(INDEX_PATH, 'r', encoding='utf-8') as f:
             return f.read()
-    except FileNotFoundError:
-        return "index.html file not found in root directory!", 404
+    return "index.html file not found in root directory!", 404
 
-# ቴሌግራም ቦቱ /start ሲባል ምላሽ እንዲሰጥ ማድረግ
+# 2. ቴሌግራም ቦቱን ከ Railway ሰርቨር ጋር ማያያዣ (Webhook Setup)
+@app.route('/setup')
+def setup_webhook():
+    webhook_url = f"{RAILWAY_URL}/{BOT_TOKEN}"
+    response = requests.get(f"{TELEGRAM_API_URL}/setWebhook?url={webhook_url}")
+    return response.json()
+
+# 3. ቴሌግራም ቦቱ /start ሲባል ምላሽ እንዲሰጥ ማድረግ
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def telegram_webhook():
     update = request.get_json()
-    if "message" in update:
+    if update and "message" in update:
         chat_id = update["message"]["chat"]["id"]
         text = update["message"].get("text", "")
         
@@ -40,7 +49,7 @@ def telegram_webhook():
             
     return jsonify({"status": "ok"})
 
-# ዲፖዚት (አድሚን ሳይጠብቅ ራሱ ቼክ አድርጎ ባላንስ የሚሞላ)
+# ዲፖዚት
 @app.route("/api/deposit", methods=["POST"])
 def verify_deposit():
     data = request.get_json()
@@ -53,7 +62,7 @@ def verify_deposit():
     
     return jsonify({"success": False, "message": "ትክክለኛ ያልሆነ መረጃ።"}), 400
 
-# ዊዝድሮ (ወደ አድሚን የሚልክ)
+# ዊዝድሮ
 @app.route("/api/withdraw", methods=["POST"])
 def request_withdraw():
     data = request.get_json()
@@ -65,7 +74,7 @@ def request_withdraw():
         
     return jsonify({"success": False, "message": "ክዋኔው አልተሳካም።"}), 400
 
-# የቢንጎ ጨዋታ እና የ 20% ኮሚሽን ስሌት
+# ቢንጎ እና 20% ኮሚሽን
 @app.route("/api/check-bingo", methods=["POST"])
 def check_bingo():
     global house_commission_balance
