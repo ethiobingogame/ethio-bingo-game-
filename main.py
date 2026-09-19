@@ -1,26 +1,39 @@
 import os
+import requests
 from flask import Flask, request, jsonify, send_from_directory
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 
-# የቦት ቶከኑ በቀጥታ እዚህ ገብቷል (Build Error እንዳያመጣ)
 BOT_TOKEN = "8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM"
-ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID", "YOUR_ADMIN_CHAT_ID")
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 user_balances = {}
-house_commission_balance = 0  # የቤቱ/የኮሚሽን ገቢ (20%) የሚከማችበት
+house_commission_balance = 0
 
+# ሚኒ-አፑን (index.html) በቀጥታ በሰርቨሩ ማዕከል እንዲያገኘው ማድረግ
 @app.route('/')
 def serve_index():
     return send_from_directory('.', 'index.html')
 
+# ቴሌግራም ቦቱ /start ሲባል ምላሽ እንዲሰጥ ማድረግ
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def telegram_webhook():
     update = request.get_json()
     if "message" in update:
+        chat_id = update["message"]["chat"]["id"]
         text = update["message"].get("text", "")
-        if text == "/start":
-            pass
+        
+        if text.startswith("/start"):
+            welcome_message = (
+                "ሰላም! ወደ ኢትዮ ቢንጎ (Ethio Bingo) እንኳን በደህና መጡ።\n\n"
+                "ከዚህ በታች ያለውን የጨዋታ አገናኝ በመጠቀም ቦርዶችን በመምረጥ መጫወት ይጀምሩ!"
+            )
+            # ለተጠቃሚው መልስ መላክ
+            requests.post(f"{TELEGRAM_API_URL}/sendMessage", json={
+                "chat_id": chat_id,
+                "text": welcome_message
+            })
+            
     return jsonify({"status": "ok"})
 
 # ዲፖዚት (አድሚን ሳይጠብቅ ራሱ ቼክ አድርጎ ባላንስ የሚሞላ)
@@ -54,18 +67,14 @@ def check_bingo():
     global house_commission_balance
     data = request.get_json()
     is_valid_bingo = data.get("is_valid", False)
-    stake_amount = float(data.get("stake", 10)) # የጨዋታው ዋጋ (ለምሳሌ 10 ብር)
+    stake_amount = float(data.get("stake", 10))
     user_id = data.get("user_id")
 
     if is_valid_bingo:
-        # የ 20% ኮሚሽን ስሌት (ለምሳሌ ከ 10 ብር -> 2 ብር ለቤት፣ 8 ብር ለተጫዋች)
         commission = stake_amount * 0.20
         player_prize = stake_amount * 0.80
-        
-        # የቤቱን ኮሚሽን መያዝ
         house_commission_balance += commission
         
-        # ለአሸናፊው የሚገባውን ባላንስ መጨመር
         if user_id:
             user_balances[user_id] = user_balances.get(user_id, 0) + player_prize
 
