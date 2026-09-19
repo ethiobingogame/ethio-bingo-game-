@@ -139,7 +139,7 @@
                 fetch('/api/check-bingo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ is_valid: true })
+                    body: JSON.stringify({ is_valid: true, stake: 10 })
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -155,5 +155,3 @@
     </script>
 </body>
 </html>
-
-
