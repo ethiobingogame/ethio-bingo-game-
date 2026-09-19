@@ -1,8 +1,9 @@
 import os
 import requests
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template_string
 
-app = Flask(__name__, static_folder='.', static_url_path='')
+# ቴምፕሌቶቹ እና ስታቲክ ፋይሎቹ አሁን ባለበት ፎልደር ውስጥ እንዲፈልግ ይደረጋል
+app = Flask(__name__, template_folder='.', static_folder='.')
 
 BOT_TOKEN = "8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
@@ -10,10 +11,14 @@ TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 user_balances = {}
 house_commission_balance = 0
 
-# ሚኒ-አፑን (index.html) በቀጥታ በሰርቨሩ ማዕከል እንዲያገኘው ማድረግ
+# ሚኒ-አፑን (index.html) በቀጥታ ማንበቢያ መንገድ
 @app.route('/')
 def serve_index():
-    return send_from_directory('.', 'index.html')
+    try:
+        with open('index.html', 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "index.html file not found in root directory!", 404
 
 # ቴሌግራም ቦቱ /start ሲባል ምላሽ እንዲሰጥ ማድረግ
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
@@ -28,7 +33,6 @@ def telegram_webhook():
                 "ሰላም! ወደ ኢትዮ ቢንጎ (Ethio Bingo) እንኳን በደህና መጡ።\n\n"
                 "ከዚህ በታች ያለውን የጨዋታ አገናኝ በመጠቀም ቦርዶችን በመምረጥ መጫወት ይጀምሩ!"
             )
-            # ለተጠቃሚው መልስ መላክ
             requests.post(f"{TELEGRAM_API_URL}/sendMessage", json={
                 "chat_id": chat_id,
                 "text": welcome_message
