@@ -1,10 +1,9 @@
 import os
-from flask import Flask, request
 import telebot
 from telebot import types
 
-# የቦቱን ቶከን እዚህ ያስገቡ
-TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
+# የቦቱን ቶከን በቀጥታ እዚህ አስገባን
+TOKEN = '8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM'
 bot = telebot.TeleBot(TOKEN)
 
 # የአድሚን እና የባንክ መረጃዎች
@@ -17,8 +16,6 @@ CBE_ACCOUNT = "1000682528641"
 # የተጠቃሚዎች መረጃ መያዣ
 users_db = {}
 user_states = {}
-
-app = Flask(__name__)
 
 # ዋናው ሜኑ
 def main_menu():
@@ -74,7 +71,6 @@ def handle_messages(message):
         return
 
     if "Play" in text or "ጨዋታ" in text:
-        # ልክ እንደ ኦሪጅናሉ አቀማመጥ (Active Game, Stake, Start in waiting እና የቦርድ ምርጫዎች)
         game_markup = types.InlineKeyboardMarkup(row_width=1)
         game_markup.add(
             types.InlineKeyboardButton("🟢 10 ETB | Active: playing | Players: 77 | 616 ETB", callback_data="play_10"),
@@ -162,7 +158,6 @@ def callback_query(call):
         stake = call.data.split("_")[1]
         bot.answer_callback_query(call.id, f"የ {stake} ብር ጨዋታ ተመረጠ!")
         
-        # ልክ እንደ ኦሪጅናሉ ቦርድ ምርጫ (ለምሳሌ Board 38 እና ቁጥሮች አወጣጥ ሎጂክ)
         board_markup = types.InlineKeyboardMarkup(row_width=3)
         board_markup.add(
             types.InlineKeyboardButton("🎲 Board 38 (ይምረጡ)", callback_data="select_board_38"),
@@ -229,18 +224,7 @@ def handle_docs_photo(message):
     except Exception as e:
         print(f"Admin forward error: {e}")
 
-@app.route('/' + TOKEN, methods=['POST'])
-def getMessage():
-    json_string = request.get_data().decode('utf-8')
-    update = telebot.types.Update.de_json(json_string)
-    bot.process_new_updates([update])
-    return "!", 200
-
-@app.route("/")
-def webhook():
-    bot.remove_webhook()
-    bot.set_webhook(url='https://YOUR_RENDER_APP_URL.onrender.com/' + TOKEN)
-    return "Ethio Bingo Mini App is running!", 200
-
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+    print("Bot is starting with polling...")
+    bot.remove_webhook()
+    bot.infinity_polling()
