@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
 
@@ -11,25 +11,16 @@ RAILWAY_URL = "https://Ethio-bingo-game-production.up.railway.app"
 user_balances = {}
 house_commission_balance = 0
 
-# 1. የ index.html ፋይልን በትክክል ከዋናው ማህደር ማንበቢያ
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-INDEX_PATH = os.path.join(BASE_DIR, 'index.html')
+# አውቶማቲክ ዌብሁክ ማገናኛ (አፕ ሲነሳ እራሱ ይመዘገባል)
+def set_webhook_automatically():
+    webhook_url = f"{RAILWAY_URL}/{BOT_TOKEN}"
+    requests.get(f"{TELEGRAM_API_URL}/setWebhook?url={webhook_url}")
 
+# index.html ከ templates ፎልደር እንዲነበብ ማድረግ
 @app.route('/')
 def serve_index():
-    if os.path.exists(INDEX_PATH):
-        with open(INDEX_PATH, 'r', encoding='utf-8') as f:
-            return f.read()
-    return "index.html file not found in root directory!", 404
+    return render_template('index.html')
 
-# 2. ቴሌግራም ቦቱን ከ Railway ሰርቨር ጋር ማያያዣ (Webhook Setup)
-@app.route('/setup')
-def setup_webhook():
-    webhook_url = f"{RAILWAY_URL}/{BOT_TOKEN}"
-    response = requests.get(f"{TELEGRAM_API_URL}/setWebhook?url={webhook_url}")
-    return response.json()
-
-# 3. ቴሌግራም ቦቱ /start ሲባል ምላሽ እንዲሰጥ ማድረግ
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def telegram_webhook():
     update = request.get_json()
@@ -49,32 +40,25 @@ def telegram_webhook():
             
     return jsonify({"status": "ok"})
 
-# ዲፖዚት
 @app.route("/api/deposit", methods=["POST"])
 def verify_deposit():
     data = request.get_json()
     user_id = data.get("user_id")
     amount = data.get("amount")
-    
     if user_id and amount:
         user_balances[user_id] = user_balances.get(user_id, 0) + float(amount)
         return jsonify({"success": True, "message": "ቀሪ ሒሳብዎ ተሞልቷል!"})
-    
     return jsonify({"success": False, "message": "ትክክለኛ ያልሆነ መረጃ።"}), 400
 
-# ዊዝድሮ
 @app.route("/api/withdraw", methods=["POST"])
 def request_withdraw():
     data = request.get_json()
     user_id = data.get("user_id")
     amount = data.get("amount")
-    
     if user_id and amount:
         return jsonify({"success": True, "message": "የገንዘብ ማውጣት ጥያቄዎ ወደ አድሚን ተልኳል።"})
-        
     return jsonify({"success": False, "message": "ክዋኔው አልተሳካም።"}), 400
 
-# ቢንጎ እና 20% ኮሚሽን
 @app.route("/api/check-bingo", methods=["POST"])
 def check_bingo():
     global house_commission_balance
@@ -87,18 +71,16 @@ def check_bingo():
         commission = stake_amount * 0.20
         player_prize = stake_amount * 0.80
         house_commission_balance += commission
-        
         if user_id:
             user_balances[user_id] = user_balances.get(user_id, 0) + player_prize
-
-        return jsonify({
-            "isBingo": True, 
-            "message": "ቢንጎ! ትክክለኛ ማረጋገጫ።",
-            "prize": player_prize,
-            "commission": commission
-        })
+        return jsonify({"isBingo": True, "prize": player_prize, "commission": commission})
     else:
-        return jsonify({"isBingo": False, "message": "የተሳሳተ ቢንጎ! ከዚህ ዙር ውጪ ሆናለ።"})
+        return jsonify({"isBingo": False})
 
 if __name__ == "__main__":
+    set_webhook_automatically()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+else:
+    # Gunicorn ሲጀምረው አውቶማቲክ ዌብሁኩን እንዲይዝ
+    set_webhook_automatically()
+
