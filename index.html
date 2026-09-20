@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ኢትዮ ቢንጎ (Ethio Bingo)</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .balance {
+            font-size: 18px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin: 20px 0;
+        }
+        .cell {
+            background: #ecf0f1;
+            padding: 15px 0;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .cell.selected {
+            background: #2ecc71;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>ኢትዮ ቢንጎ 🎮</h1>
+        <div class="balance" id="balanceDisplay">ቀሪ ሒሳብ: 0.00 ብር</div>
+
+        <div class="bingo-grid" id="bingoBoard">
+            <!-- የቢንጎ ሳጥኖች በ JS ይሞላሉ -->
+        </div>
+
+        <button class="btn" onclick="makeDeposit()">ዲፖዚት (ገንዘብ ማስገባት)</button>
+        <button class="btn" onclick="checkBingo()">ቢንጎ ማረጋገጫ</button>
+    </div>
+
+    <script>
+        // ቴሌግራም ዌብ አፕ ዳታ ማስተካከያ
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let userBalance = 0.00;
+
+        function updateUI() {
+            document.getElementById('balanceDisplay').innerText = `ቀሪ ሒሳብ: ${userBalance.toFixed(2)} ብር`;
+        }
+
+        // የቢንጎ ሰሌዳ በዘፈቀደ ቁጥሮች መሙላት
+        function generateBoard() {
+            const board = document.getElementById('bingoBoard');
+            board.innerHTML = '';
+            for (let i = 1; i <= 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.innerText = Math.floor(Math.random() * 75) + 1;
+                cell.onclick = function() {
+                    cell.classList.toggle('selected');
+                };
+                board.appendChild(cell);
+            }
+        }
+
+        function makeDeposit() {
+            userBalance += 100.00; // ለሙከራ 100 ብር መጨመሪያ
+            updateUI();
+            alert('100 ብር ወደ ሒሳብዎ ገብቷል!');
+        }
+
+        function checkBingo() {
+            fetch('/api/check-bingo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_valid: true, stake: 10, user_id: tg.initDataUnsafe?.user?.id || 'test_user' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.isBingo) {
+                    alert('🎉 ' + data.message + ' ሽልማት: ' + data.prize + ' ብር');
+                } else {
+                    alert('❌ ' + (data.message || 'አልተሳካም'));
+                }
+            })
+            .catch(err => console.error('Error:', err));
+        }
+
+        generateBoard();
+        updateUI();
+    </script>
+</body>
+</html>
