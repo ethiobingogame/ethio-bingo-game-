@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -11,35 +11,41 @@ RAILWAY_URL = "https://Ethio-bingo-game-production.up.railway.app"
 user_balances = {}
 house_commission_balance = 0
 
-# አውቶማቲክ ዌብሁክ ማገናኛ (አፕ ሲነሳ እራሱ ይመዘገባል)
-def set_webhook_automatically():
-    webhook_url = f"{RAILWAY_URL}/{BOT_TOKEN}"
-    requests.get(f"{TELEGRAM_API_URL}/setWebhook?url={webhook_url}")
+# index.html በቀጥታ ከዋናው ማህደር (Root Directory) ማንበቢያ
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+INDEX_PATH = os.path.join(BASE_DIR, 'index.html')
 
-# index.html ከ templates ፎልደር እንዲነበብ ማድረግ
 @app.route('/')
 def serve_index():
-    return render_template('index.html')
+    if os.path.exists(INDEX_PATH):
+        with open(INDEX_PATH, 'r', encoding='utf-8') as f:
+            return f.read()
+    return "index.html file not found in root directory!", 404
 
+# ቴሌግራም ዌብሁክ ማስተካከያ
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def telegram_webhook():
-    update = request.get_json()
-    if update and "message" in update:
-        chat_id = update["message"]["chat"]["id"]
-        text = update["message"].get("text", "")
-        
-        if text.startswith("/start"):
-            welcome_message = (
-                "ሰላም! ወደ ኢትዮ ቢንጎ (Ethio Bingo) እንኳን በደህና መጡ።\n\n"
-                "ከዚህ በታች ያለውን የጨዋታ አገናኝ በመጠቀም ቦርዶችን በመምረጥ መጫወት ይጀምሩ!"
-            )
-            requests.post(f"{TELEGRAM_API_URL}/sendMessage", json={
-                "chat_id": chat_id,
-                "text": welcome_message
-            })
+    try:
+        update = request.get_json()
+        if update and "message" in update:
+            chat_id = update["message"]["chat"]["id"]
+            text = update["message"].get("text", "")
             
+            if text.startswith("/start"):
+                welcome_message = (
+                    "ሰላም! ወደ ኢትዮ ቢንጎ (Ethio Bingo) እንኳን በደህና መጡ።\n\n"
+                    "ከዚህ በታች ያለውን የጨዋታ አገናኝ በመጠቀም ቦርዶችን በመምረጥ መጫወት ይጀምሩ!"
+                )
+                requests.post(f"{TELEGRAM_API_URL}/sendMessage", json={
+                    "chat_id": chat_id,
+                    "text": welcome_message
+                })
+    except Exception as e:
+        print(f"Webhook Error: {e}")
+        
     return jsonify({"status": "ok"})
 
+# ዲፖዚት
 @app.route("/api/deposit", methods=["POST"])
 def verify_deposit():
     data = request.get_json()
@@ -50,6 +56,7 @@ def verify_deposit():
         return jsonify({"success": True, "message": "ቀሪ ሒሳብዎ ተሞልቷል!"})
     return jsonify({"success": False, "message": "ትክክለኛ ያልሆነ መረጃ።"}), 400
 
+# ዊዝድሮ
 @app.route("/api/withdraw", methods=["POST"])
 def request_withdraw():
     data = request.get_json()
@@ -59,6 +66,7 @@ def request_withdraw():
         return jsonify({"success": True, "message": "የገንዘብ ማውጣት ጥያቄዎ ወደ አድሚን ተልኳል።"})
     return jsonify({"success": False, "message": "ክዋኔው አልተሳካም።"}), 400
 
+# ቢንጎ ማረጋገጫ
 @app.route("/api/check-bingo", methods=["POST"])
 def check_bingo():
     global house_commission_balance
@@ -78,9 +86,4 @@ def check_bingo():
         return jsonify({"isBingo": False})
 
 if __name__ == "__main__":
-    set_webhook_automatically()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-else:
-    # Gunicorn ሲጀምረው አውቶማቲክ ዌብሁኩን እንዲይዝ
-    set_webhook_automatically()
-
