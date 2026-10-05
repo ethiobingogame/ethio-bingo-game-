@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ኢትዮ ቢንጎ (Ethio Bingo)</title>
+    <title>ኢትዮ ቢንጎ ጌም (Ethio Bingo Game)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -35,12 +35,13 @@
             background-color: #3498db;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 20px;
             margin: 10px 0;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
             width: 100%;
+            font-weight: bold;
         }
         .btn:hover {
             background-color: #2980b9;
@@ -58,6 +59,8 @@
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
         }
         .cell.selected {
             background: #2ecc71;
@@ -68,7 +71,7 @@
 <body>
 
     <div class="container">
-        <h1>ኢትዮ ቢንጎ 🎮</h1>
+        <h1>ኢትዮ ቢንጎ ጌም 🎮</h1>
         <div class="balance" id="balanceDisplay">ቀሪ ሒሳብ: 0.00 ብር</div>
 
         <div class="bingo-grid" id="bingoBoard">
@@ -106,9 +109,30 @@
         }
 
         function makeDeposit() {
-            userBalance += 100.00; // ለሙከራ 100 ብር መጨመሪያ
-            updateUI();
-            alert('100 ብር ወደ ሒሳብዎ ገብቷል!');
+            const amountStr = prompt("ስንት ብር ዲፖዚት ማድረግ ይፈልጋሉ?", "100");
+            if (amountStr) {
+                let amount = parseFloat(amountStr);
+                if (!isNaN(amount) && amount > 0) {
+                    fetch('/api/deposit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: amount, user_id: tg.initDataUnsafe?.user?.id || 'test_user' })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) {
+                            userBalance += amount;
+                            updateUI();
+                            alert(data.message);
+                        } else {
+                            alert(data.message || 'ተቀማጭ ማድረግ አልተቻለም');
+                        }
+                    })
+                    .catch(err => console.error('Error:', err));
+                } else {
+                    alert('እባክዎ ትክክለኛ የገንዘብ መጠን ያስገቡ!');
+                }
+            }
         }
 
         function checkBingo() {
@@ -120,9 +144,11 @@
             .then(res => res.json())
             .then(data => {
                 if(data.isBingo) {
-                    alert('🎉 ' + data.message + ' ሽልማት: ' + data.prize + ' ብር');
+                    userBalance += data.prize;
+                    updateUI();
+                    alert('🎉 እንኳን ደስ አለዎት! ቢንጎ ትክክል ነው! ሽልማትዎ: ' + data.prize + ' ብር');
                 } else {
-                    alert('❌ ' + (data.message || 'አልተሳካም'));
+                    alert('❌ ቢንጎው ትክክል አይደለም ወይም አልተሳካም');
                 }
             })
             .catch(err => console.error('Error:', err));
