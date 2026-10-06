@@ -5,8 +5,8 @@ import telebot
 from flask import Flask, render_template_string, request, jsonify
 from telebot import types
 
-# ----------------------------------------------------
-TOKEN = '8970903838:AAFFS1nATTrav-rdGprQRSz6fjnIRirOhos'
+# ------------------------------------------------
+TOKEN = '8981866243:AAGFL3eNKbWaP5a0ZXtiyXoscJhX168HDrI'
 bot = telebot.TeleBot(TOKEN)
 
 app = Flask(__name__)
