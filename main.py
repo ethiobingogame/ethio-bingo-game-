@@ -42,7 +42,7 @@ def send_welcome(message):
             "step": "registered"
         }
 
-    # እባክዎ የራሳቸውን የ Render ዌብ አፕሊኬሽን ሊንክ እዚህ ጋር ያስገቡ (ለምሳሌ: https://ethio-bingo-game.onrender.com)
+    # እባክዎ የራሳቸውን የ Render/Railway ሊንክ እዚህ ጋር ያስገቡ
     webapp_url = "https://ethio-bingo-game.onrender.com"
     
     markup = types.InlineKeyboardMarkup(row_width=1)
@@ -56,7 +56,7 @@ def send_welcome(message):
     markup.add(btn_play, btn_deposit, btn_withdraw, btn_balance, btn_invite, btn_contact)
     
     welcome_text = (
-        f"🇪🇹 ሰላም **{first_name}**! እንኳን ወደ **ኢትዮ ቢንጎ ጌም (Ethio Bingo)** በደህና መጡ[span_1](start_span)[span_1](end_span)።\n\n"
+        f"🇪🇹 ሰላም **{first_name}**! እንኳን ወደ **ኢትዮ ቢንጎ ጌም (Ethio Bingo)** በደህና መጡ።\n\n"
         "እባክዎ ጨዋታውን ለመጀመር ወይም አካውንትዎን ለማስተዳደር ከታች ያሉትን ቁልፎች ይጠቀሙ፦"
     )
     bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
@@ -125,7 +125,7 @@ def handle_docs_photo(message):
         added_amount = 100.0
         users_db[user_id]["balance"] += added_amount
         
-        bot.reply_to(message, f"✅ **Deposit Successful!**\n\nክፍያው ተረጋግጧል! 💰 **{added_amount} ብር** ወደ አካውንትዎ ገብቷል[span_2](start_span)[span_2](end_span).", parse_mode="Markdown")
+        bot.reply_to(message, f"✅ **Deposit Successful!**\n\nክፍያው ተረጋግጧል! 💰 **{added_amount} ብር** ወደ አካውንትዎ ገብቷል።", parse_mode="Markdown")
         
         admin_msg = f"🔔 **አዲስ ዲፖዚት ገብቷል!**\nተጠቃሚ: @{message.from_user.username or user_id}\nመጠን: {added_amount} ብር"
         try:
@@ -162,7 +162,7 @@ def handle_text_messages(message):
             bot.reply_to(message, f"❌ በቂ ባላንስ የለዎትም! የእርስዎ አካውንት ባላንስ: **{current_bal} ብር** ብቻ ነው.", parse_mode="Markdown")
 
 # ----------------------------------------------------
-# 3. የኢትዮ ቢንጎ ሚኒ-አፕ (የተስተካከለ 200 ቦርዶች እና ትክክለኛ 45 ሰከንድ ቆጣሪ)
+# 3. የኢትዮ ቢንጎ ሚኒ-አፕ (የተስተካከለ ስክሪፕት እና ቆጣሪ)
 # ----------------------------------------------------
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -222,7 +222,7 @@ HTML_TEMPLATE = """
                 <span>Stake: <b id="picker-stake">10</b> ETB</span>
                 <span>ቆጣሪ: <b id="countdown-timer" style="color: #f1c40f; font-size: 14px;">45</b> ሰከንድ</span>
             </div>
-            <div style="font-size: 12px; margin-bottom: 5px; color: #f1c40f;">ከ 1 እስከ 200 ቦርዶች አንዱን ይምረጡ[span_3](start_span)[span_3](end_span)</div>
+            <div style="font-size: 12px; margin-bottom: 5px; color: #f1c40f;">ከ 1 እስከ 200 ቦርዶች አንዱን ይምረጡ</div>
             <div class="picker-grid" id="picker-grid"></div>
             <button class="btn-secondary" id="toggle-range-btn" onclick="toggleRange()">Show 100-200</button>
             <button class="btn-action" onclick="startBingoGame()">ቦርዱን አስጀምር (Start)</button>
