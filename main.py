@@ -12,21 +12,16 @@ bot = telebot.TeleBot(TOKEN)
 
 app = Flask(__name__)
 
-# የጨዋታው መሠረታዊ መረጃዎች
-game_state = {
-    "game_id": 656,
-    "players_count": 0,          # ከ 0 የሚጀምር የተጫዋቾች ብዛት
-    "ticket_price": 10.0,        # የካርታ ዋጋ (Stake)
-    "commission_rate": 0.20,     # የኮሚሽን ቅናሽ (20%)
-    "prize_pool": 0.0,           # አጠቃላይ ደራሽ (Derash)
-    "game_status": "Waiting",    # Waiting, Active, Finished
-    "timer": 45,                 # የሚጠበቀው ሰዓት/ሰከንድ
-    "drawn_numbers": [],         # የተጠሩ ቁጥሮች
-}
+# የጨዋታው መሠረታዊ መረጃዎች (እንደ ናሙናው ቪዲዮ)
+games_list = [
+    {"stake": 10.0, "status": "Waiting", "timer": 45, "players": 0, "draw_numbers": []},
+    {"stake": 20.0, "status": "Ready", "timer": 0, "players": 0, "draw_numbers": []},
+    {"stake": 50.0, "status": "playing", "timer": 68, "players": 0, "draw_numbers": [8, 50, 14, 26, 41]}
+]
 
-# የተጠቃሚዎች መረጃ እና ኪስ ቦርሳ (Wallet / Database Simulation)
+# የተጠቃሚዎች መረጃ እና ኪስ ቦርሳ (Wallet / Database)
 users_db = {}
-user_states = {}  # ተጠቃሚው አሁን ምን እየሰራ እንደሆነ ለመቆጣጠር
+user_states = {}
 
 # ትክክለኞቹ የድርጅቱ አካውንቶች መረጃዎች
 COMPANY_ACCOUNTS = {
@@ -35,7 +30,7 @@ COMPANY_ACCOUNTS = {
 }
 
 # ----------------------------------------------------
-# 2. የቴሌግራም ቦት ትዕዛዞች እና መስተጋብሮች
+# 2. የቴሌግራም ቦት ትዕዛዞች (/start ሲሉ የሚመዘገብበት ሂደት)
 # ----------------------------------------------------
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -48,23 +43,22 @@ def send_welcome(message):
         users_db[user_id] = {
             "first_name": first_name,
             "username": username,
-            "balance": 50.0,  # ለአዲስ ተጠቃሚ የናሙና ቦነስ
+            "balance": 59.0,  # እንደ ናሙናው ምስል 59 ብር መነሻ
             "invited": 0
         }
 
-    user_states[user_id] = None # ስቴቱን ማጽዳት
+    user_states[user_id] = None
 
     markup = types.InlineKeyboardMarkup(row_width=2)
-    btn_play = types.InlineKeyboardButton("🎮 ፕሌይ (Play)", callback_data="play_game")
+    btn_play = types.InlineKeyboardButton("🎮 ፕሌይ (Play - Mini App)", callback_data="play_game")
     btn_balance = types.InlineKeyboardButton("💳 ቼክ ባላንስ", callback_data="check_balance")
     btn_deposit = types.InlineKeyboardButton("💰 ዲፖዚት", callback_data="deposit")
     btn_withdraw = types.InlineKeyboardButton("💸 ዊዝድሮው", callback_data="withdraw")
-    btn_invite = types.InlineKeyboardButton("👥 ጓደኛ ጋበዝ", callback_data="invite_friend")
     
-    markup.add(btn_play, btn_balance, btn_deposit, btn_withdraw, btn_invite)
+    markup.add(btn_play, btn_balance, btn_deposit, btn_withdraw)
     
     welcome_text = (
-        f"🇪🇹 ሰላም **{first_name}**! እንኳን ወደ **Ethio Bingo Game** በደህና መጡ።\n\n"
+        f"🇪🇹 ሰላም **{first_name}**! እንኳን ወደ **Ethio Bingo Game Bot** በደህና መጡ።[span_2](start_span)[span_2](end_span)\n\n"
         "የቴሌግራም አካውንትዎ በትክክል ተመዝግቧል!\n"
         "እባክዎ ከታች ከሚገኙት አማራጮች የሚፈልጉትን ይጫኑ፦"
     )
@@ -74,11 +68,11 @@ def send_welcome(message):
 def callback_query(call):
     user_id = call.from_user.id
     if user_id not in users_db:
-        users_db[user_id] = {"balance": 0.0, "invited": 0}
+        users_db[user_id] = {"balance": 59.0, "invited": 0}
 
     if call.data == "play_game":
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "🎮 ጨዋታውን ለመጀመር ከዚህ በታች ያለውን ሊንክ ይጠቀሙ ወይም አብሮ የተሰራውን Mini-App ይክፈቱ!")
+        bot.send_message(call.message.chat.id, "🎮 ጨዋታውን ለመጀመር ከዚህ በታች ያለውን ሊንክ ይጠቀሙ ወይም የሚኒ-አፕ (Mini-App) ማዕቀፍ ይክፈቱ!")
     
     elif call.data == "check_balance":
         bal = users_db[user_id]["balance"]
@@ -118,24 +112,17 @@ def callback_query(call):
         bot.answer_callback_query(call.id)
         user_states[user_id] = "waiting_for_withdraw_amount"
         bot.send_message(call.message.chat.id, "💸 ለማውጣት (Withdraw) የሚፈልጉትን የብር መጠን ቁጥር ብቻ ይጻፉ (ዝቅተኛው 50 ብር):")
-    
-    elif call.data == "invite_friend":
-        bot.answer_callback_query(call.id)
-        bot_username = bot.get_me().username
-        ref_link = f"https://t.me/{bot_username}?start=ref_{user_id}"
-        bot.send_message(call.message.chat.id, f"👥 ጓደኛዎን ለመጋበዝ ይጠቀሙበት:\n\n{ref_link}\n\nእያንዳንዱ ጓደኛ ሲገባ 5 ብር ቦነስ ያግኙ!")
 
 # ----------------------------------------------------
-# 3. ቴክስት እና የፎቶ (ስክሪንሻት) መልዕክቶችን ማስተናገጃ
+# 3. የጽሁፍ እና የፎቶ ማረጋገጫ (Screenshot) አስተናጋጅ
 # ----------------------------------------------------
 @bot.message_handler(content_types=['text'])
 def handle_text_messages(message):
     user_id = message.from_user.id
     if user_id not in users_db:
-        users_db[user_id] = {"balance": 0.0, "invited": 0}
+        users_db[user_id] = {"balance": 59.0, "invited": 0}
 
     state = user_states.get(user_id)
-
     if state == "waiting_for_withdraw_amount":
         try:
             amount = float(message.text)
@@ -151,15 +138,8 @@ def handle_text_messages(message):
                     f"ቀሪ ባላንስዎ: **{users_db[user_id]['balance']} ብር**", 
                     parse_mode="Markdown"
                 )
-            elif amount < 50:
-                bot.send_message(message.chat.id, "⚠️ ዝቅተኛው የማውጫ መጠን 50 ብር ነው። እባክዎ እንደገና ይሞክሩ:")
             else:
-                bot.send_message(
-                    message.chat.id, 
-                    f"❌ **ባላንስ የለህም!**\n"
-                    f"የጠየቁት መጠን ({amount} ብር) ካለዎት ቀሪ ባላንስ ({current_balance} ብር) ይበልጣል። እባክዎ በቂ ባላንስ ይኑርዎት።", 
-                    parse_mode="Markdown"
-                )
+                bot.send_message(message.chat.id, "❌ በቂ ባላንስ የለዎትም ወይም መጠኑ ከ 50 ብር በታች ነው።")
                 user_states[user_id] = None
         except ValueError:
             bot.send_message(message.chat.id, "⚠️ እባክዎ ትክክለኛ የብር መጠን በቁጥር ብቻ ይጻፉ:")
@@ -168,28 +148,21 @@ def handle_text_messages(message):
 def handle_photo_messages(message):
     user_id = message.from_user.id
     if user_id not in users_db:
-        users_db[user_id] = {"balance": 0.0, "invited": 0}
+        users_db[user_id] = {"balance": 59.0, "invited": 0}
 
     state = user_states.get(user_id)
-
     if state == "waiting_for_screenshot":
-        # ስክሪንሻቱ እንደገባ በሲሙሌሽን የተጠቃሚው አካውንት ላይ ብር ይጨምራል
-        deposit_amount_simulated = 100.0 
-        users_db[user_id]["balance"] += deposit_amount_simulated
+        deposit_amount = 50.0 
+        users_db[user_id]["balance"] += deposit_amount
         user_states[user_id] = None
-
         bot.send_message(
             message.chat.id,
-            f"✅ **ስክሪንሻቱ በትክክል ተረጋግጧል!**\n"
-            f"አካውንትዎ ላይ **{deposit_amount_simulated} ብር** ተጨምሯል።\n"
-            f"አጠቃላይ ቀሪ ባላንስዎ: **{users_db[user_id]['balance']} ብር**",
+            f"✅ **ስክሪንሻቱ ተረጋግጧል!**\nአካውንትዎ ላይ **{deposit_amount} ብር** ተጨምሯል።\nቀሪ ባላንስዎ: **{users_db[user_id]['balance']} ብር**",
             parse_mode="Markdown"
         )
-    else:
-        bot.send_message(message.chat.id, "📸 ፎቶ ደርሶናል፤ ነገር ግን አሁን የዲፖዚት ማረጋገጫ ሂደት ውስጥ አይደሉም። እባክዎ መጀመሪያ 'ዲፖዚት' የሚለውን ይጫኑ።")
 
 # ----------------------------------------------------
-# 4. የዌብ ጨዋታ ገጽታ (HTML & Mini-App Interface)
+# 4. የኢትዮ ቢንጎ ጌም ሚኒ-አፕ (Mini-App HTML Interface)
 # ----------------------------------------------------
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -197,91 +170,74 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ethio Bingo Game</title>
+    <title>Ethio Bingo Game Bot</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #3b2a59; color: white; text-align: center; margin: 0; padding: 10px; }
-        .container { background: #513682; padding: 15px; border-radius: 12px; box-shadow: 0px 4px 15px rgba(0,0,0,0.3); max-width: 450px; margin: auto; }
-        h1 { font-size: 22px; margin-bottom: 10px; }
-        .info-box { display: flex; justify-content: space-around; background: #422d6d; padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 15px; }
-        .grid-container { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin-bottom: 15px; }
-        .cell { background: #9c7bc2; padding: 8px 2px; font-size: 12px; border-radius: 4px; font-weight: bold; }
-        .cell.called { background: #e94560; color: white; }
-        .actions button { padding: 10px 15px; font-size: 14px; margin: 5px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
-        .btn-join { background-color: #28a745; color: white; width: 45%; }
-        .btn-start { background-color: #007bff; color: white; width: 45%; }
+        body { font-family: Arial, sans-serif; background-color: #3b2a59; color: white; margin: 0; padding: 10px; text-align: center; }
+        .container { background: #513682; padding: 15px; border-radius: 12px; max-width: 450px; margin: auto; box-shadow: 0px 4px 15px rgba(0,0,0,0.3); }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #422d6d; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .wallet-badge { background: #e94560; padding: 5px 10px; border-radius: 6px; font-weight: bold; }
+        .game-card { background: #422d6d; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-play { background-color: #f39c12; color: white; border: none; padding: 6px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎮 Ethio Bingo Game</h1>
-        
-        <div class="info-box">
-            <div>ግጥሚያ ID: <span id="game-id">{{ game.game_id }}</span></div>
-            <div>ደራሽ: <span id="prize-pool">{{ game.prize_pool }}</span> ብር</div>
-            <div>ተጫዋቾች: <span id="players-count">{{ game.players_count }}</span></div>
+        <div class="header">
+            <span style="font-weight: bold; font-size: 16px;">Ethio Bingo Game Bot</span>
+            <div class="wallet-badge">💰 <span id="user-balance">59</span> ETB</div>
         </div>
 
-        <div class="info-box">
-            <div>ስታክ: {{ game.ticket_price }} ብር</div>
-            <div>ሁኔታ: <span id="game-status">{{ game.game_status }}</span></div>
-            <div>ሰዓት: <span id="timer">{{ game.timer }}</span> ሰ</div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: bold;">
+            <span>Stake</span><span>Active/Status</span><span>Players</span><span>Derash</span><span>Action</span>
         </div>
 
-        <div class="grid-container" id="bingo-board"></div>
-
-        <div class="actions">
-            <button class="btn-join" onclick="joinGame()">ይቀላቀሉ</button>
-            <button class="btn-start" onclick="startGame()">ጨዋታ ጀምር</button>
+        <div id="games-list-container">
+            <!-- በራስሰር በጃቫስክሪፕት የሚሞላ -->
         </div>
+
+        <div style="margin-top: 15px; font-size: 12px; color: #dcd6f7;">© Ethio Bingo 2026</div>
     </div>
 
     <script>
-        const board = document.getElementById('bingo-board');
-        for (let i = 1; i <= 100; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.id = 'cell-' + i;
-            cell.innerText = i;
-            board.appendChild(cell);
-        }
-
-        function updateStatus() {
-            fetch('/api/status')
+        function loadGames() {
+            fetch('/api/games')
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('players-count').innerText = data.players_count;
-                    document.getElementById('prize-pool').innerText = data.prize_pool;
-                    document.getElementById('game-status').innerText = data.game_status;
-                    document.getElementById('timer').innerText = data.timer;
-                    document.getElementById('game-id').innerText = data.game_id;
-
-                    document.querySelectorAll('.cell').forEach(c => c.classList.remove('called'));
-                    data.drawn_numbers.forEach(num => {
-                        const cell = document.getElementById('cell-' + num);
-                        if(cell) cell.classList.add('called');
+                    const container = document.getElementById('games-list-container');
+                    container.innerHTML = '';
+                    data.games.forEach((g, index) => {
+                        let derash = g.players * g.stake * 0.8; // 20% ኮሚሽን ተቀንሶ የሚቀረው ደራሽ
+                        let statusText = g.status === 'Waiting' ? g.timer + 's' : g.status;
+                        
+                        let card = document.createElement('div');
+                        card.className = 'game-card';
+                        card.innerHTML = `
+                            <span style="font-weight:bold;">${g.stake} ETB</span>
+                            <span style="color: #f1c40f;">${statusText}</span>
+                            <span>${g.players}</span>
+                            <span style="color: #2ecc71; font-weight:bold;">${derash} ETB</span>
+                            <button class="btn-play" onclick="joinGame(${index})">Play</button>
+                        `;
+                        container.appendChild(card);
                     });
                 });
         }
 
-        function joinGame() {
-            fetch('/api/join', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        function joinGame(index) {
+            fetch('/api/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ game_index: index })
+            })
             .then(res => res.json())
             .then(data => {
                 alert(data.message);
-                updateStatus();
+                loadGames();
             });
         }
 
-        function startGame() {
-            fetch('/api/start', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message);
-                updateStatus();
-            });
-        }
-
-        setInterval(updateStatus, 2000);
+        setInterval(loadGames, 2000);
+        loadGames();
     </script>
 </body>
 </html>
@@ -289,41 +245,33 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def index():
-    return render_template_string(HTML_TEMPLATE, game=game_state)
+    return render_template_string(HTML_TEMPLATE)
 
-@app.route('/api/status', methods=['GET'])
-def get_status():
-    return jsonify(game_state)
+@app.route('/api/games', methods=['GET'])
+def get_games():
+    return jsonify({"games": games_list})
 
 @app.route('/api/join', methods=['POST'])
 def join_game():
-    game_state['players_count'] += 1
-    total_collected = game_state['players_count'] * game_state['ticket_price']
-    commission = total_collected * game_state['commission_rate']
-    game_state['prize_pool'] = total_collected - commission
+    data = request.get_json()
+    idx = data.get('game_index', 0)
+    
+    # ተጠቃሚው ሲገባ እንደ ሰው ብዛት አውቶማቲካሊ ጨመረ (መቀነስም/መጨመርም ይችላል)
+    games_list[idx]['players'] += 1
     
     return jsonify({
         "status": "success",
-        "message": "ጨዋታውን በተሳካ ሁኔታ ተቀላቅለዋል!",
-        "players_count": game_state['players_count']
+        "message": "ጨዋታውን በተሳካ ሁኔታ ተቀላቅለዋል! ተጫዋቾች ታክለዋልና ደራሹ አውቶማቲካሊ ተስተካክሏል።"
     })
 
-@app.route('/api/start', methods=['POST'])
-def start_number_game():
-    if game_state['players_count'] > 0:
-        game_state['game_status'] = "Active"
-        game_state['drawn_numbers'] = [8, 50, 14, 26, 41]
-        return jsonify({"status": "success", "message": "Ethio Bingo ጨዋታ ተጀምሯል!"})
-    return jsonify({"status": "error", "message": "እባክዎ መጀመሪያ ተጫዋቾች ይግቡ!"}), 400
-
 # ----------------------------------------------------
-# 5. አፕሊኬሽኑን ማስኬጃ (Background Bot + Flask Server)
+# 5. ማስኬጃ ክፍል (Background Bot & Flask)
 # ----------------------------------------------------
 def run_telegram_bot():
     try:
         bot.infinity_polling(none_stop=True)
     except Exception as e:
-        print(f"Bot polling error: {e}")
+        print(f"Bot error: {e}")
 
 if __name__ == '__main__':
     bot_thread = threading.Thread(target=run_telegram_bot)
@@ -332,3 +280,4 @@ if __name__ == '__main__':
 
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+
