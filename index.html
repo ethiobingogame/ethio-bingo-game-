@@ -3,245 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ኢትዮ ቢንጎ ጌም (Ethio Bingo Game)</title>
+    <title>አራዳ ቢንጎ (Arada Bingo)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            background-color: #0d47a1;
             margin: 0;
-            padding: 15px;
+            padding: 10px;
+            color: white;
             text-align: center;
-            color: #333;
         }
         .container {
-            max-width: 400px;
+            max-width: 450px;
             margin: 0 auto;
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        h1 {
-            color: #2c3e50;
-            font-size: 22px;
-            margin-bottom: 5px;
-        }
-        .info-box {
+        .header {
             display: flex;
             justify-content: space-between;
-            background: #eef2f3;
+            align-items: center;
+            background: #1565c0;
             padding: 10px;
             border-radius: 8px;
-            margin: 10px 0;
+            margin-bottom: 10px;
+        }
+        .balance-box {
+            background: #ffb300;
+            color: black;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
             font-size: 14px;
+        }
+        .refresh-btn {
+            background: #0d47a1;
+            color: white;
+            border: 1px solid white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
             font-weight: bold;
         }
-        .balance {
-            font-size: 16px;
-            margin: 10px 0;
+        .table-header {
+            display: grid;
+            grid-template-columns: 1.2fr 1.5fr 1fr 1.2fr 1.2fr;
+            background: #e65100;
+            padding: 8px;
             font-weight: bold;
-            color: #27ae60;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 5px;
         }
-        .stake-section {
-            margin: 10px 0;
-            font-size: 14px;
+        .row-item {
+            display: grid;
+            grid-template-columns: 1.2fr 1.5fr 1fr 1.2fr 1.2fr;
+            background: #1e3a8a;
+            padding: 10px;
+            align-items: center;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 13px;
+            position: relative;
         }
-        .stake-select {
-            padding: 6px;
-            font-size: 14px;
+        .play-btn {
+            background: #d4af37;
+            color: black;
+            border: none;
+            padding: 6px 14px;
             border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .play-btn:hover {
+            background: #c59b27;
+        }
+        .low-balance {
+            color: #ffcccc;
+            font-size: 12px;
+        }
+        .active-tag {
+            position: absolute;
+            top: -8px;
+            left: 15px;
+            background: #27ae60;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        /* የቦርድ ምርጫ እና ጨዋታ ማሳያ */
+        #gameScreen {
+            display: none;
+            background: #d1c4e9;
+            color: black;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 3px;
+            margin: 10px 0;
+        }
+        .num-cell {
+            background: #fff;
+            padding: 8px 2px;
+            font-size: 12px;
+            border-radius: 3px;
+            cursor: pointer;
             border: 1px solid #ccc;
         }
-        .bingo-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-            margin: 15px 0;
-        }
-        .cell {
-            background: #ecf0f1;
-            padding: 12px 0;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.2s;
-        }
-        .cell.selected {
-            background: #2ecc71;
+        .num-cell.selected {
+            background: #e74c3c;
             color: white;
         }
-        .btn {
-            background-color: #3498db;
-            color: white;
+        .action-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .btn-action {
+            padding: 8px 15px;
             border: none;
-            padding: 10px 15px;
-            margin: 6px 0;
             border-radius: 5px;
-            cursor: pointer;
-            font-size: 15px;
-            width: 100%;
             font-weight: bold;
+            cursor: pointer;
         }
-        .btn:hover {
-            background-color: #2980b9;
-        }
-        .btn-withdraw {
-            background-color: #e67e22;
-        }
-        .btn-withdraw:hover {
-            background-color: #d35400;
-        }
-        .btn-bingo {
-            background-color: #27ae60;
-        }
-        .btn-bingo:hover {
-            background-color: #219653;
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #bbdefb;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>ኢትዮ ቢንጎ ጌም 🎮</h1>
-        
-        <div class="info-box">
-            <span>👥 ተጫዋቾች: <b id="activePlayers">12</b></span>
-            <span>💰 ደራሽ: <b id="derashAmount">240.00 ብር</b></span>
+        <!-- ዋናው የጨዋታ ዝርዝር ገጽ -->
+        <div id="mainLobby">
+            <div class="header">
+                <div class="balance-box" id="userBalance">💳 49 ETB</div>
+                <div style="font-size: 16px; font-weight: bold;">Arada Bingo</div>
+                <button class="refresh-btn" onclick="refreshData()">Refresh</button>
+            </div>
+
+            <div class="table-header">
+                <div>Stake</div>
+                <div>Status</div>
+                <div>Players</div>
+                <div>Derash</div>
+                <div>Play</div>
+            </div>
+
+            <!-- 10 ብር ጨዋታ -->
+            <div class="row-item">
+                <div><b>10 ETB</b></div>
+                <div>43s</div>
+                <div>18</div>
+                <div>144 ETB</div>
+                <td><button class="play-btn" onclick="selectStake(10)">Play</button></td>
+            </div>
+
+            <!-- 20 ብር ጨዋታ -->
+            <div class="row-item">
+                <div><b>20 ETB</b></div>
+                <div>Ready</div>
+                <div>0</div>
+                <div>0 ETB</div>
+                <td><button class="play-btn" onclick="selectStake(20)">Play</button></td>
+            </div>
+
+            <!-- 50 ብር ጨዋታ (Low Balance የሚፈተሽበት) -->
+            <div class="row-item">
+                <div class="active-tag">Active game</div>
+                <div><b>50 ETB</b></div>
+                <div><span class="low-balance">Low balance</span></div>
+                <div>69</div>
+                <div>2720 ETB</div>
+                <td><button class="play-btn" onclick="selectStake(50)">Play</button></td>
+            </div>
+
+            <div class="footer">© Arada Bingo 2025</div>
         </div>
 
-        <div class="balance" id="balanceDisplay">ቀሪ ሒሳብ: 0.00 ብር</div>
+        <!-- ቁጥር የሚመረጥበት ቦርድ ገጽ -->
+        <div id="gameScreen">
+            <h3 id="selectedStakeTitle">ውርርድ: 10 ብር</h3>
+            <p>እባክዎ የሚፈልጉትን የቦርድ ቁጥር ይምረጡ (ከ1 እስከ 200)</p>
+            
+            <div class="numbers-grid" id="boardGrid">
+                <!-- በጃቫስክሪፕት የሚሞላ -->
+            </div>
 
-        <div class="stake-section">
-            <label for="stakeSelect">የውርርድ መጠን (Stake): </label>
-            <select id="stakeSelect" class="stake-select" onchange="updateStake()">
-                <option value="10">10 ብር</option>
-                <option value="20">20 ብር</option>
-                <option value="50">50 ብር</option>
-                <option value="100">100 ብር</option>
-            </select>
+            <div class="action-btns">
+                <button class="btn-action" style="background:#e0e0e0;" onclick="goBack()">Back</button>
+                <button class="btn-action" style="background:#27ae60; color:white;" onclick="startGame()">Start Game</button>
+            </div>
         </div>
-
-        <div class="bingo-grid" id="bingoBoard">
-            <!-- የቢንጎ ሳጥኖች በ JS ይሞላሉ -->
-        </div>
-
-        <button class="btn btn-bingo" onclick="checkBingo()">🎉 ቢንጎ ማረጋገጫ (Bingo!)</button>
-        <button class="btn" onclick="makeDeposit()">💳 ዲፖዚት (ገንዘብ ማስገባት)</button>
-        <button class="btn btn-withdraw" onclick="requestWithdraw()">💸 ገንዘብ ማውጣት (Withdraw)</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        let userBalance = 0.00;
-        let currentStake = 10;
+        let balance = 49; // የተጠቃሚው ቀሪ ሒሳብ
+        let chosenStake = 10;
 
-        function updateUI() {
-            document.getElementById('balanceDisplay').innerText = `ቀሪ ሒሳብ: ${userBalance.toFixed(2)} ብር`;
+        function refreshData() {
+            alert('መረጃው ታድሷል!');
         }
 
-        function updateStake() {
-            currentStake = parseFloat(document.getElementById('stakeSelect').value);
+        function selectStake(stake) {
+            chosenStake = stake;
+            
+            // ባላንስ ከውርርዱ ካነሰ (ለምሳሌ 50 ብር ለመጫወት ሞክሮ ባላንሱ 49 ከሆነ)
+            if (balance < stake) {
+                alert('❌ በቂ ቀሪ ሒሳብ የለዎትም (Low balance)! እባክዎ አካውንትዎ ላይ ገንዘብ ይሙሉ');
+                return;
+            }
+
+            // ወደ ቦርድ መምረጫ ማሳያ መቀየር
+            document.getElementById('mainLobby').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('selectedStakeTitle').innerText = `የውርርድ መጠን: ${stake} ብር`;
+            
+            generateNumbersBoard();
         }
 
-        // የቢንጎ ሰሌዳ በዘፈቀደ ቁጥሮች መሙላት
-        function generateBoard() {
-            const board = document.getElementById('bingoBoard');
-            board.innerHTML = '';
-            for (let i = 1; i <= 25; i++) {
+        function generateNumbersBoard() {
+            const grid = document.getElementById('boardGrid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 200; i++) {
                 const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.innerText = Math.floor(Math.random() * 75) + 1;
+                cell.className = 'num-cell';
+                cell.innerText = i;
                 cell.onclick = function() {
-                    cell.classList.toggle('selected');
+                    // ቀድሞ የተመረጠውን በማጥፋት አንዱን ብቻ መምረጥ እንዲቻል
+                    document.querySelectorAll('.num-cell').forEach(c => c.classList.remove('selected'));
+                    cell.classList.add('selected');
                 };
-                board.appendChild(cell);
+                grid.appendChild(cell);
             }
         }
 
-        function makeDeposit() {
-            const amountStr = prompt("ስንት ብር ዲፖዚት ማድረግ ይፈልጋሉ?", "100");
-            if (amountStr) {
-                let amount = parseFloat(amountStr);
-                if (!isNaN(amount) && amount > 0) {
-                    fetch('/api/deposit', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ amount: amount, user_id: tg.initDataUnsafe?.user?.id || 'test_user' })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if(data.success) {
-                            userBalance += amount;
-                            updateUI();
-                            alert(data.message);
-                        } else {
-                            alert(data.message || 'ተቀማጭ ማድረግ አልተቻለም');
-                        }
-                    })
-                    .catch(err => console.error('Error:', err));
-                } else {
-                    alert('እባክዎ ትክክለኛ የገንዘብ መጠን ያስገቡ!');
-                }
+        function goBack() {
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('mainLobby').style.display = 'block';
+        }
+
+        function startGame() {
+            const selectedCell = document.querySelector('.num-cell.selected');
+            if (!selectedCell) {
+                alert('እባክዎ መጀመሪያ የቦርድ ቁጥር ይምረጡ!');
+                return;
             }
+            alert(`በተሳካ ሁኔታ የቦርድ ቁጥር ${selectedCell.innerText} በመምረጥ ጨዋታውን ጀምረዋል!`);
+            // ወደ ዋናው የጨዋታ ሂደት የሚወስደውን ኮድ እዚህ ማካተት ይቻላል
         }
-
-        function requestWithdraw() {
-            const amountStr = prompt("ስንት ብር ማውጣት (Withdraw) ይፈልጋሉ?", "50");
-            if (amountStr) {
-                let amount = parseFloat(amountStr);
-                if (!isNaN(amount) && amount > 0) {
-                    if (amount <= userBalance) {
-                        fetch('/api/withdraw', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ amount: amount, user_id: tg.initDataUnsafe?.user?.id || 'test_user' })
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if(data.success) {
-                                userBalance -= amount;
-                                updateUI();
-                                alert(data.message);
-                            } else {
-                                alert(data.message || 'ማውጣት አልተቻለም');
-                            }
-                        })
-                        .catch(err => console.error('Error:', err));
-                    } else {
-                        alert('የካርቱን/ሒሳብ መጠን ከቀሪ ሒሳብዎ ሊበልጥ አይችልም!');
-                    }
-                } else {
-                    alert('እባክዎ ትክክለኛ መጠን ያስገቡ!');
-                }
-            }
-        }
-
-        function checkBingo() {
-            fetch('/api/check-bingo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_valid: true, stake: currentStake, user_id: tg.initDataUnsafe?.user?.id || 'test_user' })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.isBingo) {
-                    userBalance += data.prize;
-                    updateUI();
-                    alert('🎉 እንኳን ደስ አለዎት! ቢንጎ ትክክል ነው! ሽልማትዎ: ' + data.prize + ' ብር');
-                } else {
-                    alert('❌ ቢንጎው ትክክል አይደለም ወይም አልተሳካም');
-                }
-            })
-            .catch(err => console.error('Error:', err));
-        }
-
-        generateBoard();
-        updateUI();
     </script>
 </body>
 </html>
+
