@@ -1,90 +1,77 @@
-import os
-import requests
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-BOT_TOKEN = '8970903838:AAEhA0lIWc94AwA0B01lfm8MvIEhAdM'
-TELEGRAM_API_URL = f'https://api.telegram.org/bot{BOT_TOKEN}'
-RAILWAY_URL = 'https://Ethio-bingo-game-production.up.railway.app'
-
-user_balances = {}
-house_commission_balance = 0
-
-# index.html በቀጥታ ማሳየት (Root Directory) ማስተካከል
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-INDEX_PATH = os.path.join(BASE_DIR, 'index.html')
+# የጨዋታው አጠቃላይ ሁኔታ እና የክፍያ አካውንቶች (ንግድ ባንክ እና ቴሌብር)
+game_state = {
+    "players_count": 0,
+    "prize_pool": 0,
+    "stake": 10,  # የናሙና ስቴክ ዋጋ 
+    "banned_users": [],
+    "payment_accounts": {
+        "cbe": {
+            "bank_name": "የኢትዮጵያ ንግድ ባንክ (CBE)",
+            "account_number": "1000XXXXXXXXXX",
+            "account_holder": "እናቴ ቢንጎ"
+        },
+        "telebirr": {
+            "service_name": "ቴሌብር (Telebirr)",
+            "account_number": "09XXXXXXXX",
+            "account_holder": "እናቴ ቢንጎ"
+        }
+    }
+}
 
 @app.route('/')
-def serve_index():
-    if os.path.exists(INDEX_PATH):
-        with open(INDEX_PATH, 'r', encoding='utf-8') as f:
-            return f.read()
-    return "index.html file not found in root directory", 404
+def index():
+    return render_template('index.html')
 
-# ቴሌግራም ዌብሁክ ማስተናገጃ
-@app.route(f'/{BOT_TOKEN}', methods=['POST'])
-def telegram_webhook():
-    try:
-        update = request.get_json()
-        if update and "message" in update:
-            chat_id = update["message"]["chat"]["id"]
-            text = update["message"].get("text", "")
+# የባንክ እና የቴሌብር አካውንት መረጃዎችን ለተጠቃሚው ለማሳየት
+@app.route('/api/accounts', methods=['GET'])
+def get_accounts():
+    return jsonify({
+        "status": "success",
+        "accounts": game_state["payment_accounts"]
+    })
 
-            if text.startswith("/start"):
-                welcome_message = (
-                    "ሰላምእንኳን ወደ ኢትዮ ቢንጎ ጌም (Ethio Bingo Game) በደህና መጡ!\n\n"
-                    "ይህንን ቦት በመጠቀም ገንዘብ ዴፖዚት በማድረግ እና በመጫወት ዕድልዎን ይሞክሩ።\n\n"
-                    "💳 **የንግድ ባንክ (CBE):** 1000682528641 (Enyachew Amerga)\n"
-                    "📱 **ቴሌብር (Telebirr):** 0944123180 (Enyachew Amerga)\n\n"
-                    "እባክዎ ገንዘብ ከላኩ በኋላ የግብይት ማረጋገጫ (Receipt) ቁጥር ይላኩ!"
-                )
-                requests.post(f'{TELEGRAM_API_URL}/sendMessage', json={
-                    'chat_id': chat_id,
-                    'text': welcome_message
-                })
+@app.route('/api/join', methods=['POST'])
+def join_game():
+    data = request.json or {}
+    user_id = data.get('user_id', 'guest')
+    transaction_ref = data.get('transaction_ref', '') # የባንክ ወይም የቴሌብር የትራንዛክሽን ቁጥር
+    
+    if user_id in game_state["banned_users"]:
+        return jsonify({"status": "banned", "message": "በቀድሞ የተሳሳተ ቢንጎ ሙከራ ምክንያት በዚህ ጨዋታ ታግደዋል!"})
+    
+    # ተጫዋች ሲቀላቀል የሰዎች ብዛት እና የሽልማት መጠን (Prize Pool) በራስሰር ይጨምራል
+    game_state["players_count"] += 1
+    game_state["prize_pool"] = game_state["players_count"] * game_state["stake"]
+    
+    return jsonify({
+        "status": "success",
+        "players_count": game_state["players_count"],
+        "prize_pool": game_state["prize_pool"],
+        "message": "ክፍያዎ ተረጋግጦ ጨዋታውን ተቀላቅለዋል!"
+    })
 
-        return jsonify({"status": "ok"})
-    except Exception as e:
-        print(f"Webhook Error: {e}")
-        return jsonify({"status": "ok"})
-
-@app.route('/api/deposit', methods=['POST'])
-def verify_deposit():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    amount = data.get('amount')
-    if user_id and amount:
-        user_balances[user_id] = user_balances.get(user_id, 0) + float(amount)
-        return jsonify({"success": True, "message": "ተቀማጭ ገንዘብዎ ተሳክቷል!"})
-    return jsonify({"success": False, "message": "እባክዎ ትክክለኛ መረጃ ያስገቡ"})
-
-@app.route('/api/withdraw', methods=['POST'])
-def request_withdraw():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    amount = data.get('amount')
-    if user_id and amount:
-        return jsonify({"success": True, "message": "የገንዘብ ማውጣት ጥያቄዎ ተቀባይነት አግኝቷል!"})
-    return jsonify({"success": False, "message": "እባክዎ ትክክለኛ መረጃ ያስገቡ"})
-
-@app.route('/api/check-bingo', methods=['POST'])
-def check_bingo():
-    global house_commission_balance
-    data = request.get_json()
-    user_id = data.get('user_id')
-    is_valid_bingo = data.get('is_valid', False)
-    stake_amount = float(data.get('stake', 10))
-
-    if is_valid_bingo:
-        commission = stake_amount * 0.20
-        player_prize = stake_amount * 0.80
-        house_commission_balance += commission
-        if user_id:
-            user_balances[user_id] = user_balances.get(user_id, 0) + player_prize
-        return jsonify({"isBingo": True, "prize": player_prize})
+@app.route('/api/verify-bingo', methods=['POST'])
+def verify_bingo():
+    data = request.json or {}
+    user_id = data.get('user_id', 'guest')
+    marked_numbers = data.get('marked_numbers', [])
+    
+    # የቢንጎ ማረጋገጫ ሎጂክ
+    is_winner = len(marked_numbers) >= 5 
+    
+    if is_winner:
+        reward = game_state["prize_pool"]
+        msg = f"🎉 ዊን! አሸንፈዋል! የተሰበሰበው ጠቅላላ ሽልማት ብር {reward} ወደ አካውንትዎ ተልኳል።"
+        return jsonify({"status": "win", "message": msg, "reward": reward})
     else:
-        return jsonify({"isBingo": False})
+        # የተሳሳተ ቢንጎ ከሆነ ለአንድ ጨዋታ ማገድ
+        if user_id not in game_state["banned_users"]:
+            game_state["banned_users"].append(user_id)
+        return jsonify({"status": "banned", "message": "❌ የተሳሳተ ቢንጎ! ለዚህ ጨዋታ ታግደዋል (Suspended for one game)።"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=True, host='0.0.0.0', port=5000)
