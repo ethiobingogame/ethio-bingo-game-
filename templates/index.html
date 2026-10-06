@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethio Bingo Game</title>
+    <style>
+        body {
+            background-color: #7c3aed;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            text-align: center;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #6d28d9;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .stake-card {
+            background: #5b21b6;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .play-btn {
+            background: #f59e0b;
+            color: black;
+            border: none;
+            padding: 8px 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .play-btn:hover {
+            background: #d97706;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <span id="balance">💰 59 ETB</span>
+        <h2>Ethio Bingo Game</h2>
+        <button onclick="location.reload()" style="background:#4c1d95; color:white; border:none; padding:5px 10px; border-radius:5px;">Refresh</button>
+    </div>
+
+    <div id="game-container">
+        <!-- Stake 10 -->
+        <div class="stake-card">
+            <div>
+                <strong>10 ETB</strong><br>
+                <small>Players: <span id="p-10">18</span> | Derash: <span id="d-10">144</span> ETB</small>
+            </div>
+            <button class="play-btn" onclick="joinGame(10)">Play</button>
+        </div>
+
+        <!-- Stake 20 -->
+        <div class="stake-card">
+            <div>
+                <strong>20 ETB</strong><br>
+                <small>Players: <span id="p-20">0</span> | Derash: <span id="d-20">0</span> ETB</small>
+            </div>
+            <button class="play-btn" onclick="joinGame(20)">Play</button>
+        </div>
+
+        <!-- Stake 50 -->
+        <div class="stake-card" style="border: 2px solid #ef4444;">
+            <div>
+                <span style="color:#ef4444; font-size:12px;">Active game 🔥</span><br>
+                <strong>50 ETB</strong><br>
+                <small>Players: <span id="p-50">68</span> | Derash: <span id="d-50">2720</span> ETB</small>
+            </div>
+            <button class="play-btn" onclick="joinGame(50)">Play</button>
+        </div>
+    </div>
+
+    <p style="margin-top: 30px; font-size: 12px; color: #ddd;">Ethio Bingo 2026</p>
+
+    <script>
+        function joinGame(stakeAmount) {
+            alert(stakeAmount + " ETB ጨዋታን ተቀላቅለዋል! ቦርድዎ እየተጫነ ነው...");
+        }
+    </script>
+</body>
+</html>
