@@ -1,127 +1,126 @@
-import requests
 from flask import Flask, render_template, request, jsonify
+import random
 
 app = Flask(__name__)
 
-# የቴሌግራም ቦት ማዋቀሪያ (የእርስዎን የቦት ቶከን እና የአድሚን Chat ID እዚህ ያስገቡ)
-BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
-ADMIN_CHAT_ID = "YOUR_ADMIN_CHAT_ID"  
-ADMIN_USERNAME = "@enyachew_19"        
+# የማሳያ (Mock) የውሂብ መዋቅር (Database ምትክ)
+# እዚህ ጋር የተጠቃሚዎችን መረጃ፣ ዩዘርኔም እና የኪስ ቦርሳ (Wallet Balance) እንይዛለን
+users_db = {}
 
-# የጨዋታው አጠቃላይ ሁኔታ (Ethio Bingo Game)
-game_state = {
-    "bot_name": "Ethio Bingo Game",
-    "players_count": 0,
-    "prize_pool": 0,
-    "stake": 10,
-    "commission_rate": 0.20, 
-    "banned_users": [],
-    "user_balances": {}, 
-    "used_ft_numbers": [], 
-    "payment_accounts": {
-        "cbe": {
-            "bank_name": "የኢትዮጵያ ንግድ ባንክ (CBE)",
-            "account_number": "1000682528641",
-            "account_holder": "Enyachew Amerga"
-        },
-        "telebirr": {
-            "service_name": "ቴሌብር (Telebirr)",
-            "account_number": "0944123180",
-            "account_holder": "Enyachew Amerga"
-        }
-    }
+# የቢንጎ ስቴኮች እና የተለዋዋጭ (Dynamic) ተጫዋቾች እና ድራሽ መረጃ
+stakes_data = {
+    10: {"players": 14, "derash": 140},
+    20: {"players": 8, "derash": 160},
+    50: {"players": 22, "derash": 1100}
 }
 
 @app.route('/')
 def index():
+    return render_template('index.html')
+
+# 1. ዩዘርኔም እና ባላንስ ማስጀመር / ማረጋገጥ
+@app.route('/api/user', methods=['POST'])
+def handle_user():
+    data = request.json
+    telegram_id = str(data.get('telegram_id'))
+    username = data.get('username', 'ተጠቃሚ')
+    
+    if telegram_id not in users_db:
+        # አዲስ ተጠቃሚ ሲመዘገብ የሚሰጠው የመጀመሪያ ባላንስ
+        users_db[telegram_id] = {
+            "username": username,
+            "balance": 100.0,  # ዜሮ እንዳይሆን የመነሻ ባላንስ ተሰጥቷል
+            "boards": []
+        }
+    
+    return jsonify({
+        "status": "success",
+        "user": users_db[telegram_id]
+    })
+
+# 2. የስቴኮች እና የተጫዋቾች ብዛት መረጃ (Dynamic Update)
+@app.route('/api/stakes', methods=['GET'])
+def get_stakes():
+    # በየሰዓቱ ወይም ሲጠየቅ ተጫዋቾች በራንደም እንዲቀያየሩ ማድረግ ይቻላል
+    for stake in stakes_data:
+        change = random.choice([-1, 0, 1, 2])
+        stakes_data[stake]["players"] = max(2, stakes_data[stake]["players"] + change)
+        stakes_data[stake]["derash"] = stakes_data[stake]["players"] * stake
+        
+    return jsonify(stakes_data)
+
+# 3. ከ 1 እስከ 200 ያሉ ቦርዶች ውስጥ ቦርድ መምረጥ
+@app.route('/api/select_board', methods=['POST'])
+def select_board():
+    data = request.json
+    telegram_id = str(data.get('telegram_id'))
+    stake = int(data.get('stake', 10))
+    board_number = int(data.get('board_number', 1)) # ከ 1 እስከ 200 ያለው ምርጫ
+    
+    if telegram_id not in users_db:
+        return jsonify({"status": "error", "message": "ተጠቃሚው አልተገኘም"})
+    
+    user = users_db[telegram_id]
+    
+    # የባላንስ በቂ መሆን አለመሆኑን ማረጋገጥ
+    if user["balance"] < stake:
+        return jsonify({"status": "error", "message": "የሂሳብ ሚዛንዎ በቂ አይደለም!"})
+    
+    # ስቴኩን ከባላንስ መቀነስ
+    user["balance"] -= stake
+    
+    # የቢንጎ ቦርድ ቁጥሮችን ማመንጨት (5x5 ራንደም ቁጥሮች)
+    board_numbers = random.sample(range(1, 76), 25)
+    
+    selected_board = {
+        "board_number": board_number,
+        "stake": stake,
+        "numbers": board_numbers,
+        "marked": [False] * 25
+    }
+    
+    user["boards"].append(selected_board)
+    
+    return jsonify({
+        "status": "success",
+        "message": f"ቦርድ ቁጥር {board_number} በተሳካ ሁኔታ ተመርጧል!",
+        "balance": user["balance"],
+        "board": selected_board
+    })
+
+# 4. የቢንጎ ማረጋገጫ (Bingo Verification & Notification)
+@app.route('/api/check_win', methods=['POST'])
+def check_win():
+    data = request.json
+    telegram_id = str(data.get('telegram_id'))
+    board_index = int(data.get('board_index', 0))
+    
+    if telegram_id not in users_db:
+        return jsonify({"status": "error", "message": "ተጠቃሚው አልተገኘም"})
+    
+    user = users_db[telegram_id]
     try:
-        return render_template('index.html')
-    except Exception as e:
-        return f"Template Error: index.html - {str(e)}", 500
-
-@app.route('/api/status', methods=['GET'])
-def get_status():
-    return jsonify({
-        "status": "success",
-        "bot_name": game_state["bot_name"],
-        "players_count": game_state["players_count"],
-        "prize_pool": game_state["prize_pool"],
-        "stakes": [10, 20, 50]
-    })
-
-@app.route('/api/accounts', methods=['GET'])
-def get_accounts():
-    return jsonify({
-        "status": "success",
-        "accounts": game_state["payment_accounts"]
-    })
-
-@app.route('/api/deposit', methods=['POST'])
-def deposit():
-    data = request.get_json(silent=True) or {}
-    user_id = data.get('user_id', 'guest')
-    amount = float(data.get('amount', 0))
-    ft_number = data.get('ft_number', '').strip()
+        board = user["boards"][board_index]
+    except IndexError:
+        return jsonify({"status": "error", "message": "ቦርዱ አልተገኘም"})
     
-    if not ft_number:
-        return jsonify({"status": "error", "message": "እባክዎ ትክክለኛ የትራንዛክሽን (FT) ቁጥር ያስገቡ!"})
+    # እዚህጋ የቢንጎ መስመር መሞላቱን ይረጋገጣል (ለማሳያ ያህል በዕድል 50 በመቶ አሸናፊነት)
+    is_winner = random.choice([True, False])
     
-    if ft_number in game_state["used_ft_numbers"]:
-        return jsonify({"status": "error", "message": "ይህ የ FT ቁጥር ከዚህ በፊት ጥቅም ላይ ውሏል!"})
-    
-    net_amount = amount - (amount * game_state["commission_rate"])
-    game_state["used_ft_numbers"].append(ft_number)
-    
-    if user_id not in game_state["user_balances"]:
-        game_state["user_balances"][user_id] = 0
-    game_state["user_balances"][user_id] += net_amount
-
-    return jsonify({
-        "status": "success",
-        "message": f"ዲፖዚትዎ ተረጋግጧል! ብር {net_amount} ወደ አካውንትዎ ገብቷልም።",
-        "balance": game_state["user_balances"][user_id]
-    })
-
-@app.route('/api/withdraw', methods=['POST'])
-def withdraw():
-    data = request.get_json(silent=True) or {}
-    user_id = data.get('user_id', 'guest')
-    amount = float(data.get('amount', 0))
-    payment_method = data.get('payment_method', '') 
-    account_number = data.get('account_number', '') 
-    account_holder = data.get('account_holder', '') 
-    
-    current_balance = game_state["user_balances"].get(user_id, 0)
-    
-    if current_balance < amount:
-        return jsonify({"status": "error", "message": f"በቂ ባላንስ የለዎትም! ያሎት ባላንስ: ብር {current_balance} ነው።"})
-    
-    game_state["user_balances"][user_id] -= amount
-    
-    admin_msg = (
-        f"⚠️ **አዲስ የገንዘብ ማውጣት (Withdraw) ጥያቄ!**\n\n"
-        f"👤 ተጠቃሚ ID: `{user_id}`\n"
-        f"💰 የሚወጣው መጠን: ብር **{amount}**\n"
-        f"💳 የባንክ አማራጭ: **{payment_method.upper()}**\n"
-        f"🔢 አካውንት ቁጥር: `{account_number}`\n"
-        f"👤 ስም: **{account_holder}**\n"
-        f"🛠️ አድሚን: `{ADMIN_USERNAME}`"
-    )
-    
-    try:
-        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
-            "chat_id": ADMIN_CHAT_ID,
-            "text": admin_msg,
-            "parse_mode": "Markdown"
+    if is_winner:
+        reward = board["stake"] * 8 # የድል ሽልማት ሂሳብ
+        user["balance"] += reward
+        return jsonify({
+            "status": "win",
+            "message": f"እንኳን ደስ አለዎት! {user['username']} ጨዋታውን አሸንፈዋል! ሽልማትዎ: {reward} ETB",
+            "new_balance": user["balance"]
         })
-    except Exception as e:
-        print("Admin notification error:", e)
-    
-    return jsonify({
-        "status": "success",
-        "message": "የዊዝድሮ ጥያቄዎ ለአድሚን ተልኳል!",
-        "remaining_balance": game_state["user_balances"][user_id]
-    })
+    else:
+        return jsonify({
+            "status": "lose",
+            "message": "ተሸንፈዋል! ቀጣይ ሰሌዳ ላይ ዕድልዎን ይሞክሩ።"
+        })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
