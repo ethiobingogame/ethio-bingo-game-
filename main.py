@@ -6,9 +6,9 @@ import telebot
 from telebot import types
 
 # ----------------------------------------------------
-# 1. ማዋቀሪያ እና ቶከን (Configuration & Token)
+# 1. ማዋቀሪያ እና አዲሱ ቶከን (Configuration & Token)
 # ----------------------------------------------------
-TOKEN = '8981866243:AAGFL3eNKbWaP5a0ZXtiyXoscJhX168HDrI'
+TOKEN = '8806795454:AAESXX0GARmzthQ0FkcJRoMREN1SbcKSEZQ'
 bot = telebot.TeleBot(TOKEN)
 
 app = Flask(__name__)
@@ -42,7 +42,6 @@ def send_welcome(message):
 def callback_handler(call):
     if call.data == "deposit_menu":
         bot.answer_callback_query(call.id)
-        # የባንክ ምርጫ አማራጮች (Inline Buttons)
         markup = types.InlineKeyboardMarkup(row_width=1)
         btn_telebirr = types.InlineKeyboardButton("📱 Telebirr", callback_data="pay_telebirr")
         btn_cbe = types.InlineKeyboardButton("🏦 Commercial Bank of Ethiopia (CBE)", callback_data="pay_cbe")
