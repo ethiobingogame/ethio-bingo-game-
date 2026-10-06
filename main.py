@@ -1,126 +1,123 @@
-from flask import Flask, render_template, request, jsonify
-import random
+from flask import Flask, render_template_string, request, jsonify
+import os
 
 app = Flask(__name__)
 
-# የማሳያ (Mock) የውሂብ መዋቅር (Database ምትክ)
-# እዚህ ጋር የተጠቃሚዎችን መረጃ፣ ዩዘርኔም እና የኪስ ቦርሳ (Wallet Balance) እንይዛለን
-users_db = {}
-
-# የቢንጎ ስቴኮች እና የተለዋዋጭ (Dynamic) ተጫዋቾች እና ድራሽ መረጃ
-stakes_data = {
-    10: {"players": 14, "derash": 140},
-    20: {"players": 8, "derash": 160},
-    50: {"players": 22, "derash": 1100}
+# የጨዋታው መሠረታዊ መረጃዎች (Game State)
+game_state = {
+    "players_count": 0,          # የተጫዋቾች ብዛት ከ 0 ይጀምራል
+    "ticket_price": 50.0,        # የአንድ ካርታ ዋጋ (በብር)
+    "commission_rate": 0.20,     # የኮሚሽን ቅናሽ (20%)
+    "prize_pool": 0.0,           # ለደራሽ የሚቀመጠው አጠቃላይ ገንዘብ
+    "game_status": "Waiting",    # Waiting, Active, Ready, Finished
+    "drawn_numbers": [],         # የተጠሩ ቁጥሮች ዝርዝር
 }
+
+# የፊት ገጽታ (HTML Template በዚሁ ፋይል ውስጥ በአንድነት የተካተተ)
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethio Bingo Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; text-align: center; padding: 50px; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); display: inline-block; max-width: 400px; width: 100%; }
+        h1 { color: #333; font-size: 24px; }
+        .card-info { margin: 20px 0; font-size: 18px; text-align: left; background: #fafafa; padding: 15px; border-radius: 8px; }
+        .card-info p { margin: 10px 0; }
+        .actions button { padding: 12px 20px; font-size: 16px; margin: 5px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 5px; width: 100%; }
+        .actions button:hover { background-color: #218838; }
+        .start-btn { background-color: #007bff !important; }
+        .start-btn:hover { background-color: #0056b3 !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Ethio Bingo Game</h1>
+        <div class="card-info">
+            <p><strong>የተጫዋቾች ብዛት:</strong> <span id="players-count">{{ game.players_count }}</span></p>
+            <p><strong>አጠቃላይ ደራሽ (Prize):</strong> <span id="prize-pool">{{ game.prize_pool }}</span> ብር</p>
+            <p><strong>የጨዋታ ሁኔታ:</strong> <span id="game-status">{{ game.game_status }}</span></p>
+        </div>
+        
+        <div class="actions">
+            <button onclick="joinGame()">ጨዋታውን ይቀላቀሉ</button>
+            <button class="start-btn" onclick="startGame()">ጨዋታ ጀምር</button>
+        </div>
+    </div>
+
+    <script>
+        function joinGame() {
+            fetch('/api/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ balance: 100.0 })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        function startGame() {
+            fetch('/api/start', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
+"""
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template_string(HTML_TEMPLATE, game=game_state)
 
-# 1. ዩዘርኔም እና ባላንስ ማስጀመር / ማረጋገጥ
-@app.route('/api/user', methods=['POST'])
-def handle_user():
-    data = request.json
-    telegram_id = str(data.get('telegram_id'))
-    username = data.get('username', 'ተጠቃሚ')
+@app.route('/api/join', methods=['POST'])
+def join_game():
+    data = request.json or {}
+    user_balance = data.get('balance', 0.0)
     
-    if telegram_id not in users_db:
-        # አዲስ ተጠቃሚ ሲመዘገብ የሚሰጠው የመጀመሪያ ባላንስ
-        users_db[telegram_id] = {
-            "username": username,
-            "balance": 100.0,  # ዜሮ እንዳይሆን የመነሻ ባላንስ ተሰጥቷል
-            "boards": []
-        }
+    # የባላንስ ማረጋገጫ (Balance Verification)
+    if user_balance < game_state['ticket_price']:
+        return jsonify({
+            "status": "error",
+            "message": "Low Balance! በቂ ሂሳብ የለዎትም እባክዎ አካውንትዎን ይሙሉን።"
+        }), 400
+
+    # ተጫዋች ሲገባ ቁጥሩን መጨመር እና ደራሹን ማሰላት (ከ20% ኮሚሽን ጋር)
+    game_state['players_count'] += 1
+    total_collected = game_state['players_count'] * game_state['ticket_price']
+    commission = total_collected * game_state['commission_rate']
+    game_state['prize_pool'] = total_collected - commission
     
     return jsonify({
         "status": "success",
-        "user": users_db[telegram_id]
+        "message": "በተሳካ ሁኔታ ጨዋታውን ተቀላቅለዋል!",
+        "game": game_state
     })
 
-# 2. የስቴኮች እና የተጫዋቾች ብዛት መረጃ (Dynamic Update)
-@app.route('/api/stakes', methods=['GET'])
-def get_stakes():
-    # በየሰዓቱ ወይም ሲጠየቅ ተጫዋቾች በራንደም እንዲቀያየሩ ማድረግ ይቻላል
-    for stake in stakes_data:
-        change = random.choice([-1, 0, 1, 2])
-        stakes_data[stake]["players"] = max(2, stakes_data[stake]["players"] + change)
-        stakes_data[stake]["derash"] = stakes_data[stake]["players"] * stake
-        
-    return jsonify(stakes_data)
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    return jsonify(game_state)
 
-# 3. ከ 1 እስከ 200 ያሉ ቦርዶች ውስጥ ቦርድ መምረጥ
-@app.route('/api/select_board', methods=['POST'])
-def select_board():
-    data = request.json
-    telegram_id = str(data.get('telegram_id'))
-    stake = int(data.get('stake', 10))
-    board_number = int(data.get('board_number', 1)) # ከ 1 እስከ 200 ያለው ምርጫ
-    
-    if telegram_id not in users_db:
-        return jsonify({"status": "error", "message": "ተጠቃሚው አልተገኘም"})
-    
-    user = users_db[telegram_id]
-    
-    # የባላንስ በቂ መሆን አለመሆኑን ማረጋገጥ
-    if user["balance"] < stake:
-        return jsonify({"status": "error", "message": "የሂሳብ ሚዛንዎ በቂ አይደለም!"})
-    
-    # ስቴኩን ከባላንስ መቀነስ
-    user["balance"] -= stake
-    
-    # የቢንጎ ቦርድ ቁጥሮችን ማመንጨት (5x5 ራንደም ቁጥሮች)
-    board_numbers = random.sample(range(1, 76), 25)
-    
-    selected_board = {
-        "board_number": board_number,
-        "stake": stake,
-        "numbers": board_numbers,
-        "marked": [False] * 25
-    }
-    
-    user["boards"].append(selected_board)
-    
-    return jsonify({
-        "status": "success",
-        "message": f"ቦርድ ቁጥር {board_number} በተሳካ ሁኔታ ተመርጧል!",
-        "balance": user["balance"],
-        "board": selected_board
-    })
-
-# 4. የቢንጎ ማረጋገጫ (Bingo Verification & Notification)
-@app.route('/api/check_win', methods=['POST'])
-def check_win():
-    data = request.json
-    telegram_id = str(data.get('telegram_id'))
-    board_index = int(data.get('board_index', 0))
-    
-    if telegram_id not in users_db:
-        return jsonify({"status": "error", "message": "ተጠቃሚው አልተገኘም"})
-    
-    user = users_db[telegram_id]
-    try:
-        board = user["boards"][board_index]
-    except IndexError:
-        return jsonify({"status": "error", "message": "ቦርዱ አልተገኘም"})
-    
-    # እዚህጋ የቢንጎ መስመር መሞላቱን ይረጋገጣል (ለማሳያ ያህል በዕድል 50 በመቶ አሸናፊነት)
-    is_winner = random.choice([True, False])
-    
-    if is_winner:
-        reward = board["stake"] * 8 # የድል ሽልማት ሂሳብ
-        user["balance"] += reward
-        return jsonify({
-            "status": "win",
-            "message": f"እንኳን ደስ አለዎት! {user['username']} ጨዋታውን አሸንፈዋል! ሽልማትዎ: {reward} ETB",
-            "new_balance": user["balance"]
-        })
-    else:
-        return jsonify({
-            "status": "lose",
-            "message": "ተሸንፈዋል! ቀጣይ ሰሌዳ ላይ ዕድልዎን ይሞክሩ።"
-        })
+@app.route('/api/start', methods=['POST'])
+def start_game():
+    if game_state['players_count'] > 0:
+        game_state['game_status'] = "Active"
+        return jsonify({"status": "success", "message": "Ethio Bingo ጨዋታ ተጀምሯል!"})
+    return jsonify({"status": "error", "message": "በቂ ተጫዋቾች አልተገኙም!"}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
