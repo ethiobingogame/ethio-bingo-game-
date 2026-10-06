@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>አራዳ ቢንጎ (Arada Bingo)</title>
+    <title>Ethio Bingo</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -92,59 +92,102 @@
             border-radius: 4px;
             font-weight: bold;
         }
-        /* የቦርድ ምርጫ እና ጨዋታ ማሳያ */
-        #gameScreen {
+        /* የቦርድ ምርጫ ገጽ */
+        #boardScreen {
             display: none;
-            background: #d1c4e9;
-            color: black;
-            padding: 15px;
+            background: #9575cd;
+            color: white;
+            padding: 10px;
             border-radius: 10px;
+        }
+        .board-header {
+            background: #512da8;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 14px;
         }
         .numbers-grid {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             gap: 3px;
             margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
         }
         .num-cell {
-            background: #fff;
+            background: #d1c4e9;
+            color: black;
             padding: 8px 2px;
-            font-size: 12px;
+            font-size: 11px;
             border-radius: 3px;
             cursor: pointer;
-            border: 1px solid #ccc;
+            border: 1px solid #7e57c2;
         }
         .num-cell.selected {
             background: #e74c3c;
             color: white;
+            font-weight: bold;
         }
-        .action-btns {
+        .board-actions {
             display: flex;
             justify-content: space-between;
             margin-top: 10px;
         }
-        .btn-action {
-            padding: 8px 15px;
-            border: none;
+        /* የጨዋታ ማዕከል (Game Interface) */
+        #gameActiveScreen {
+            display: none;
+            background: #1a237e;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: left;
+        }
+        .game-top-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            background: #283593;
+            padding: 6px;
             border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .bingo-card {
+            background: white;
+            color: black;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .bingo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+        .bingo-table th, .bingo-table td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            font-size: 12px;
+        }
+        .bingo-table th {
+            background: #ffb300;
         }
         .footer {
             margin-top: 20px;
             font-size: 12px;
             color: #bbdefb;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- ዋናው የጨዋታ ዝርዝር ገጽ -->
+        <!-- 1. ዋናው የሎቢ ገጽ -->
         <div id="mainLobby">
             <div class="header">
-                <div class="balance-box" id="userBalance">💳 49 ETB</div>
-                <div style="font-size: 16px; font-weight: bold;">Arada Bingo</div>
+                <div class="balance-box" id="userBalance">💳 0 ETB</div>
+                <div style="font-size: 16px; font-weight: bold;">Ethio Bingo</div>
                 <button class="refresh-btn" onclick="refreshData()">Refresh</button>
             </div>
 
@@ -159,109 +202,14 @@
             <!-- 10 ብር ጨዋታ -->
             <div class="row-item">
                 <div><b>10 ETB</b></div>
-                <div>43s</div>
-                <div>18</div>
-                <div>144 ETB</div>
+                <div id="status10">43s</div>
+                <div id="players10">18</div>
+                <div id="derash10">144 ETB</div>
                 <td><button class="play-btn" onclick="selectStake(10)">Play</button></td>
             </div>
 
             <!-- 20 ብር ጨዋታ -->
             <div class="row-item">
                 <div><b>20 ETB</b></div>
-                <div>Ready</div>
-                <div>0</div>
-                <div>0 ETB</div>
-                <td><button class="play-btn" onclick="selectStake(20)">Play</button></td>
-            </div>
-
-            <!-- 50 ብር ጨዋታ (Low Balance የሚፈተሽበት) -->
-            <div class="row-item">
-                <div class="active-tag">Active game</div>
-                <div><b>50 ETB</b></div>
-                <div><span class="low-balance">Low balance</span></div>
-                <div>69</div>
-                <div>2720 ETB</div>
-                <td><button class="play-btn" onclick="selectStake(50)">Play</button></td>
-            </div>
-
-            <div class="footer">© Arada Bingo 2025</div>
-        </div>
-
-        <!-- ቁጥር የሚመረጥበት ቦርድ ገጽ -->
-        <div id="gameScreen">
-            <h3 id="selectedStakeTitle">ውርርድ: 10 ብር</h3>
-            <p>እባክዎ የሚፈልጉትን የቦርድ ቁጥር ይምረጡ (ከ1 እስከ 200)</p>
-            
-            <div class="numbers-grid" id="boardGrid">
-                <!-- በጃቫስክሪፕት የሚሞላ -->
-            </div>
-
-            <div class="action-btns">
-                <button class="btn-action" style="background:#e0e0e0;" onclick="goBack()">Back</button>
-                <button class="btn-action" style="background:#27ae60; color:white;" onclick="startGame()">Start Game</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
-
-        let balance = 49; // የተጠቃሚው ቀሪ ሒሳብ
-        let chosenStake = 10;
-
-        function refreshData() {
-            alert('መረጃው ታድሷል!');
-        }
-
-        function selectStake(stake) {
-            chosenStake = stake;
-            
-            // ባላንስ ከውርርዱ ካነሰ (ለምሳሌ 50 ብር ለመጫወት ሞክሮ ባላንሱ 49 ከሆነ)
-            if (balance < stake) {
-                alert('❌ በቂ ቀሪ ሒሳብ የለዎትም (Low balance)! እባክዎ አካውንትዎ ላይ ገንዘብ ይሙሉ');
-                return;
-            }
-
-            // ወደ ቦርድ መምረጫ ማሳያ መቀየር
-            document.getElementById('mainLobby').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'block';
-            document.getElementById('selectedStakeTitle').innerText = `የውርርድ መጠን: ${stake} ብር`;
-            
-            generateNumbersBoard();
-        }
-
-        function generateNumbersBoard() {
-            const grid = document.getElementById('boardGrid');
-            grid.innerHTML = '';
-            for (let i = 1; i <= 200; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'num-cell';
-                cell.innerText = i;
-                cell.onclick = function() {
-                    // ቀድሞ የተመረጠውን በማጥፋት አንዱን ብቻ መምረጥ እንዲቻል
-                    document.querySelectorAll('.num-cell').forEach(c => c.classList.remove('selected'));
-                    cell.classList.add('selected');
-                };
-                grid.appendChild(cell);
-            }
-        }
-
-        function goBack() {
-            document.getElementById('gameScreen').style.display = 'none';
-            document.getElementById('mainLobby').style.display = 'block';
-        }
-
-        function startGame() {
-            const selectedCell = document.querySelector('.num-cell.selected');
-            if (!selectedCell) {
-                alert('እባክዎ መጀመሪያ የቦርድ ቁጥር ይምረጡ!');
-                return;
-            }
-            alert(`በተሳካ ሁኔታ የቦርድ ቁጥር ${selectedCell.innerText} በመምረጥ ጨዋታውን ጀምረዋል!`);
-            // ወደ ዋናው የጨዋታ ሂደት የሚወስደውን ኮድ እዚህ ማካተት ይቻላል
-        }
-    </script>
-</body>
-</html>
-
+                <div id="status20">Ready</div>
+                <div id="players20
