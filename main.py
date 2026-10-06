@@ -6,9 +6,7 @@ from flask import Flask, render_template_string, request, jsonify
 from telebot import types
 
 # ----------------------------------------------------
-# 1. የቴሌግራም ቦት እና የፍላስክ (Flask) ማዋቀሪያ
-# ----------------------------------------------------
-TOKEN = '8970903838:AAHe0aHlIWVc94wAOB0lml8fM6BmVIEhaDM'
+TOKEN = '8970903838:AAFFS1nATTrav-rdGprQRSz6fjnIRirOhos'
 bot = telebot.TeleBot(TOKEN)
 
 app = Flask(__name__)
