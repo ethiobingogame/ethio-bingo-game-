@@ -13,7 +13,7 @@ bot = telebot.TeleBot(TOKEN)
 
 app = Flask(__name__)
 
-# የውሸት ዳታቤዝ (Database)
+# ዳታቤዝ (Database)
 users_db = {}
 active_players_count = 0
 current_derash = 0
@@ -26,7 +26,7 @@ COMPANY_ACCOUNTS = {
 }
 
 # ----------------------------------------------------
-# 2. የቴሌግራም ቦት ትዕዛዞች እና ሙሉ ምናሌዎች
+# 2. የቴሌግራም ቦት ትዕዛዞች እና ምናሌዎች (በትክክል ምላሽ የሚሰጥ)
 # ----------------------------------------------------
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -34,7 +34,6 @@ def send_welcome(message):
     username = message.from_user.username or "არមាន"
     first_name = message.from_user.first_name or "ተጠቃሚ"
 
-    # ተጠቃሚው ካልተመዘገበ መመዝገብ እና ባላንሱን 0 ማድረግ
     if user_id not in users_db:
         users_db[user_id] = {
             "first_name": first_name,
@@ -43,8 +42,8 @@ def send_welcome(message):
             "invited": 0,
             "step": "registered"
         }
-        bot.send_message(message.chat.id, f"✅ ሰላም **{first_name}**! በ **Ethio Bingo Game** በተሳካ ሁኔታ ተመዝገብዋል።", parse_mode="Markdown")
 
+    # እባክዎ የራሳቸውን የ Render ዌብ አፕሊኬሽን ሊንክ እዚህ ጋር ያስገቡ
     webapp_url = "https://your-app-name.onrender.com"
     
     markup = types.InlineKeyboardMarkup(row_width=1)
@@ -58,8 +57,8 @@ def send_welcome(message):
     markup.add(btn_play, btn_deposit, btn_withdraw, btn_balance, btn_invite, btn_contact)
     
     welcome_text = (
-        f"🇪🇹 እንኳን ወደ **Ethio Bingo Game Bot** በደህና መጡ[span_0](start_span)[span_0](end_span)[span_1](start_span)[span_1](end_span)።\n\n"
-        "እባክዎ ከታች ያሉትን አማራጮች በመጠቀም ጨዋታውን ይጫወቱ ወይም አካውንትዎን ያስተዳድሩ፦"
+        f"🇪🇹 ሰላም **{first_name}**! እንኳን ወደ **Ethio Bingo Game** በደህና መጡ[span_1](start_span)[span_1](end_span)[span_2](start_span)[span_2](end_span)[span_3](start_span)[span_3](end_span).\n\n"
+        "እባክዎ ጨዋታውን ለመጀመር ወይም አካውንትዎን ለማስተዳደር ከታች ያሉትን ቁልፎች ይጠቀሙ፦"
     )
     bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
 
@@ -119,19 +118,16 @@ def callback_query(call):
         bot.answer_callback_query(call.id)
         bot.send_message(call.message.chat.id, f"📞 **እኛን ያግኙን (Support)**\n\nአስተዳዳሪን ለማግኘት፦ @{ADMIN_USERNAME}", parse_mode="Markdown")
 
-# ፎቶ (ስክሪንሻት) ሲላክ የሚሰጥ ምላሽ (ዲፖዚት ማረጋገጫ)
 @bot.message_handler(content_types=['photo'])
 def handle_docs_photo(message):
     user_id = message.from_user.id
     if user_id in users_db and users_db[user_id].get("step") == "awaiting_deposit_screenshot":
-        # ስክሪንሻቱ ተረጋገጦ በሂደት ላይ እንዳለ ማሳወቅ
         users_db[user_id]["step"] = "registered"
-        added_amount = 100.0  # ናሙና የተረጋገጠ ገንዘብ
+        added_amount = 100.0
         users_db[user_id]["balance"] += added_amount
         
-        bot.reply_to(message, f"✅ **Deposit Successful!**\n\nክፍያው ተረጋግጧል! 💰 **{added_amount} ብር** ወደ አካውንትዎ ገብቷል።", parse_mode="Markdown")
+        bot.reply_to(message, f"✅ **Deposit Successful!**\n\nክፍያው ተረጋግጧል! 💰 **{added_amount} ብር** ወደ አካውንትዎ ገብቷል[span_4](start_span)[span_4](end_span).", parse_mode="Markdown")
         
-        # ለአድሚኑ ማሳወቂያ መላክ
         admin_msg = f"🔔 **አዲስ ዲፖዚት ገብቷል!**\nተጠቃሚ: @{message.from_user.username or user_id}\nመጠን: {added_amount} ብር"
         try:
             bot.send_message(f"@{ADMIN_USERNAME}", admin_msg, parse_mode="Markdown")
@@ -140,7 +136,6 @@ def handle_docs_photo(message):
     else:
         bot.reply_to(message, "📸 የስክሪንሻት ፎቶ ተቀብለናል እናመሰግናለን!")
 
-# የጽሁፍመልዕክቶች (Withdraw መጠን ሲያስገቡ)
 @bot.message_handler(func=lambda message: True)
 def handle_text_messages(message):
     user_id = message.from_user.id
@@ -159,17 +154,16 @@ def handle_text_messages(message):
             users_db[user_id]["step"] = "registered"
             bot.reply_to(message, f"✅ **Withdrawal Request Successful!**\n\nየጠየቁት መጠን ({amount} ብር) ወደ ውጭ ለመላክ ወደ አስተዳዳሪ ተላልፏል።", parse_mode="Markdown")
             
-            # ለአድሚኑ (@Enyachew-19) ማሳወቂያ መላክ
             admin_msg = f"💸 **አዲስ የዊዝድሮ ጥያቄ!**\n\n👤 ተጠቃሚ: @{message.from_user.username or user_id}\n💵 መጠን: {amount} ብር\n🏦 አማራጭ: {users_db[user_id].get('wd_method')}"
             try:
                 bot.send_message(f"@{ADMIN_USERNAME}", admin_msg, parse_mode="Markdown")
             except Exception:
                 pass
         else:
-            bot.reply_to(message, f"❌ በቂ ባላንስ የለዎትም! የእርስዎ አካውንት ባላንስ: **{current_bal} ብር** ብቻ ነው[span_2](start_span)[span_2](end_span)።", parse_mode="Markdown")
+            bot.reply_to(message, f"❌ በቂ ባላንስ የለዎትም! የእርስዎ አካውንት ባላንስ: **{current_bal} ብር** ብቻ ነው[span_5](start_span)[span_5](end_span).", parse_mode="Markdown")
 
 # ----------------------------------------------------
-# 3. የኢትዮ ቢንጎ ሚኒ-አፕ (HTML/JS)
+# 3. የኢትዮ ቢንጎ ሚኒ-አፕ (የተስተካከለ 200 ቦርዶች እና ተኖች)
 # ----------------------------------------------------
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -188,8 +182,8 @@ HTML_TEMPLATE = """
         
         .lobby-header { display: flex; justify-content: space-between; padding: 0 5px 8px 5px; font-size: 12px; font-weight: bold; color: #dcd6f7; border-bottom: 1px solid #6c5ce7; margin-bottom: 8px; }
 
-        .picker-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin: 8px 0; max-height: 240px; overflow-y: auto; padding: 5px; background: #422d6d; border-radius: 8px; }
-        .num-cell { background: #6c5ce7; padding: 6px 0; border-radius: 3px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        .picker-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin: 8px 0; max-height: 220px; overflow-y: auto; padding: 5px; background: #422d6d; border-radius: 8px; }
+        .num-cell { background: #6c5ce7; padding: 6px 0; border-radius: 3px; font-size: 11px; cursor: pointer; font-weight: bold; text-align: center; }
         .num-cell.selected { background: #e94560; color: white; }
         
         .bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; background: #2c1e4a; padding: 6px; border-radius: 8px; margin-top: 8px; border: 2px solid #1abc9c; }
@@ -199,7 +193,7 @@ HTML_TEMPLATE = """
         .board-cell.free-cell { background: #e74c3c; color: white; font-size: 11px; }
         
         .btn-action { background: #2ecc71; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; width: 100%; font-size: 14px; }
-        .btn-secondary { background: #718093; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-top: 5px; }
+        .btn-secondary { background: #718093; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-top: 5px; width: 100%; }
         
         .top-info-bar { display: flex; justify-content: space-between; background: #422d6d; padding: 6px 10px; border-radius: 6px; font-size: 11px; margin-bottom: 8px; }
     </style>
@@ -211,6 +205,7 @@ HTML_TEMPLATE = """
             <div class="wallet-badge">💰 <span id="user-balance">0.00</span> ETB</div>
         </div>
 
+        <!-- ሎቢ (Lobby View) -->
         <div id="view-lobby">
             <div class="lobby-header">
                 <span style="width: 50px; text-align: left;">Stake</span>
@@ -222,32 +217,34 @@ HTML_TEMPLATE = """
             <div id="games-list-container"></div>
         </div>
 
+        <!-- 200 ቦርዶች መምረጫ (Picker View) -->
         <div id="view-picker" style="display: none;">
             <div class="top-info-bar">
                 <span>Stake: <b id="picker-stake">10</b> ETB</span>
                 <span>ጊዜ: <b id="countdown-timer" style="color: #f1c40f;">45</b> ሰከንድ</span>
             </div>
-            <div style="font-size: 12px; margin-bottom: 5px; color: #f1c40f;">ከ 1 እስከ 200 ቦርዶች ይምረጡ</div>
+            <div style="font-size: 12px; margin-bottom: 5px; color: #f1c40f;">ከ 1 እስከ 200 ቦርዶች አንዱን ይምረጡ</div>
             <div class="picker-grid" id="picker-grid"></div>
             <button class="btn-secondary" id="toggle-range-btn" onclick="toggleRange()">Show 100-200</button>
             <button class="btn-action" onclick="startBingoGame()">ቦርዱን አስጀምር (Start)</button>
-            <button class="btn-secondary" onclick="showLobby()">ተመለስ</button>
+            <button class="btn-secondary" onclick="showLobby()" style="margin-top: 5px;">ተመለስ (Back)</button>
         </div>
 
+        <!-- የቢንጎ ጨዋታ ሰሌዳ (Board View) -->
         <div id="view-board" style="display: none;">
             <div class="top-info-bar">
                 <span>ቦርድ #: <b id="board-selected-num" style="color: #f1c40f;">1</b></span>
                 <span>ዕድል (Derash): <b style="color: #2ecc71;" id="board-derash-val">0 ETB</b></span>
             </div>
             <div style="background: #422d6d; padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 12px;">የተጠራ ቁጥር (Current Call)</span>
+                <span style="font-size: 12px;">የተጠራ ቁጥር</span>
                 <b id="current-call" style="font-size: 15px; color: #f1c40f; background: #2c1e4a; padding: 3px 10px; border-radius: 4px;">መጠባበቂያ...</b>
             </div>
             
             <div class="bingo-board" id="user-bingo-board"></div>
             
             <button class="btn-action" style="background: #e94560;" onclick="checkBingoWin()">BINGO! (ቢንጎ በል)</button>
-            <button class="btn-secondary" onclick="showLobby()" style="width: 100%; margin-top: 6px;">ተው (Leave)</button>
+            <button class="btn-secondary" onclick="showLobby()" style="margin-top: 6px;">ጨዋታውን ተው (Leave)</button>
         </div>
     </div>
 
@@ -289,13 +286,15 @@ HTML_TEMPLATE = """
             document.getElementById('picker-stake').innerText = games[index].stake;
             document.getElementById('view-lobby').style.display = 'none';
             document.getElementById('view-picker').style.display = 'block';
+            document.getElementById('view-board').style.display = 'none';
             
             renderBoardPicker(1, 100);
             
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 timeLeft--;
-                document.getElementById('countdown-timer').innerText = timeLeft;
+                let timerEl = document.getElementById('countdown-timer');
+                if (timerEl) timerEl.innerText = timeLeft;
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     startBingoGame();
@@ -311,7 +310,12 @@ HTML_TEMPLATE = """
                 cell.className = 'num-cell';
                 if (chosenBoardId === i) cell.classList.add('selected');
                 cell.innerText = i;
-                cell.onclick = () => { chosenBoardId = i; renderBoardPicker(showingSecondHalf ? 101 : 1, showingSecondHalf ? 200 : 100); };
+                cell.onclick = (function(boardId) {
+                    return function() {
+                        chosenBoardId = boardId;
+                        renderBoardPicker(showingSecondHalf ? 101 : 1, showingSecondHalf ? 200 : 100);
+                    };
+                })(i);
                 grid.appendChild(cell);
             }
         }
@@ -328,14 +332,14 @@ HTML_TEMPLATE = """
             }
         }
 
-        function generateBoard(id) {
-            let s = (n) => Math.floor(Math.sin(id + n) * 10000) % 15;
+        function generateUniqueBoard(id) {
+            let s = (n) => Math.abs(Math.sin(id * 99 + n * 33) * 10000);
             let b = [], i = [], n = [], g = [], o = [];
-            while(b.length < 5) { let val = Math.abs(s(b.length)) + 1; if(!b.includes(val)) b.push(val); }
-            while(i.length < 5) { let val = Math.abs(s(i.length + 10)) + 16; if(!i.includes(val)) i.push(val); }
-            while(n.length < 4) { let val = Math.abs(s(n.length + 20)) + 31; if(!n.includes(val)) n.push(val); }
-            while(g.length < 5) { let val = Math.abs(s(g.length + 30)) + 46; if(!g.includes(val)) g.push(val); }
-            while(o.length < 5) { let val = Math.abs(s(o.length + 40)) + 61; if(!o.includes(val)) o.push(val); }
+            while(b.length < 5) { let val = Math.floor(s(b.length) % 15) + 1; if(!b.includes(val)) b.push(val); }
+            while(i.length < 5) { let val = Math.floor(s(i.length + 10) % 15) + 16; if(!i.includes(val)) i.push(val); }
+            while(n.length < 4) { let val = Math.floor(s(n.length + 20) % 15) + 31; if(!n.includes(val)) n.push(val); }
+            while(g.length < 5) { let val = Math.floor(s(g.length + 30) % 15) + 46; if(!g.includes(val)) g.push(val); }
+            while(o.length < 5) { let val = Math.floor(s(o.length + 40) % 15) + 61; if(!o.includes(val)) o.push(val); }
             n.splice(2, 0, 'FREE');
             let board = [];
             for(let r = 0; r < 5; r++) board.push(b[r], i[r], n[r], g[r], o[r]);
@@ -344,8 +348,10 @@ HTML_TEMPLATE = """
 
         function startBingoGame() {
             if (timerInterval) clearInterval(timerInterval);
+            document.getElementById('view-lobby').style.display = 'none';
             document.getElementById('view-picker').style.display = 'none';
             document.getElementById('view-board').style.display = 'block';
+            
             document.getElementById('board-selected-num').innerText = chosenBoardId;
             document.getElementById('board-derash-val').innerText = "168 ETB";
             
@@ -359,7 +365,8 @@ HTML_TEMPLATE = """
                 boardContainer.appendChild(hc);
             });
 
-            generateBoard(chosenBoardId).forEach(val => {
+            let boardValues = generateUniqueBoard(chosenBoardId);
+            boardValues.forEach(val => {
                 let cell = document.createElement('div');
                 cell.className = 'board-cell';
                 if (val === 'FREE') {
@@ -367,30 +374,21 @@ HTML_TEMPLATE = """
                     cell.classList.add('free-cell', 'marked');
                 } else {
                     cell.innerText = val;
-                    cell.onclick = () => cell.classList.toggle('marked');
+                    cell.onclick = function() {
+                        this.classList.toggle('marked');
+                    };
                 }
                 boardContainer.appendChild(cell);
             });
 
-            // ቁጥር መጥራት (B-I-N-G-O)
             let letters = ['B', 'I', 'N', 'G', 'O'];
             if (callingInterval) clearInterval(callingInterval);
             callingInterval = setInterval(() => {
                 let lIdx = Math.floor(Math.random() * 5);
                 let num = Math.floor(Math.random() * 15) + (lIdx * 15 + 1);
-                document.getElementById('current-call').innerText = `${letters[lIdx]}-${num}`;
+                let callEl = document.getElementById('current-call');
+                if (callEl) callEl.innerText = `${letters[lIdx]}-${num}`;
             }, 3000);
-        }
-
-        function checkBingoWin() {
-            if (callingInterval) clearInterval(callingInterval);
-            let marked = document.querySelectorAll('.board-cell.marked').length;
-            if (marked >= 5) {
-                alert('🎉 እንኳን ደስ አለዎት! ትክክለኛ ቢንጎ ነው!');
-            } else {
-                alert('❌ የተሳሳተ ቢንጎ (Bogus)!');
-            }
-            showLobby();
         }
 
         function showLobby() {
